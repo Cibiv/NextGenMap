@@ -31,32 +31,40 @@
     <!-- MAIN CONTENT -->
     <div id="main_content_wrap" class="outer">
       <section id="main_content" class="inner">
-        <h3>Welcome to GitHub Pages.</h3>
+        <h3>Welcome to NextGenMap.</h3>
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+<p>NextGenMap (NGM) is a flexible and fast read mapping program that is more than twice as fast as BWA, while achieving a mapping sensitivity similar to Stampy or Bowtie2.
+NextGenMap uses a memory efficient index structure (hash table) to store the positions of all 13-mers present in the reference genome. 
+This index enables a quick identification of potential mapping regions for every read. Unlike other methods, NextGenMap dynamically determines for each read individually how 
+many of the potential mapping regions have to be evaluated by a pairwise sequence alignment. Moreover, NextGenMap uses fast
+SIMD instructions (SSE) to accelerate the alignment calculations on the CPU. If available NextGenMap calculates the alignments
+on the GPU (using OpenCL/CUDA) resulting in a runtime reduction of another 20 - 50 %, debending on the underlying data set.
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
-</code></pre>
+Our results show that NextGenMap using only the CPU is at least twice as fast as BWA. Using the GPU for the alignment 
+calculations increases the speedup to a factor of three. NextGenMap (GPU) even outperforms Bowtie2 by 10 - 50 % in 
+terms of runtime. More importantly, the number of correctly mapped reads is similar to Stampy, one of the most sensitive
+methods available.
+</p>
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+<h3>Availability</h3>
 
-<h3>Designer Templates</h3>
+<p>NextGenMap version 0.3.1.1 is current available on Github. For downloading please follow the links:
+<a href="https://github.com/Cibiv/NextGenMap/zipball/master">Download this project as a .zip file</a>
+<a href="https://github.com/Cibiv/NextGenMap/tarball/master">Download this project as a tar.gz file</a>
+</p>
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
 
-<h3>Rather Drive Stick?</h3>
+<h3>Documentation</h3>
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+<p>We set up a wiki for giving detailed information on how to install and configure NextGenMap for your purpose. Please follow this 
+<a href="https://github.com/Cibiv/NextGenMap">link</a> to access the github page and the wiki.
+</p>
 
-<h3>Authors and Contributors</h3>
+<h3>Contact</h3>
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
-
-<h3>Support or Contact</h3>
-
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
+<p>We are always looking forward for feetback or how we can improve NextGenMap. If you have any issues please do not hastiate to either leave a note in the issue section (<a href="https://github.com/Cibiv/NextGenMap">link</a>) or directly contacting either .</p>
+<a href="fritz.sedlazeck@univie.ac.at">fritz.sedlazeck@univie.ac.at</a>
+<a href="philipp.rescheneder@univie.ac.at">philipp.rescheneder@univie.ac.at</a>
       </section>
     </div>
 
