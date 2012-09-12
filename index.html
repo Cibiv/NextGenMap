@@ -39,7 +39,7 @@ This index enables a quick identification of potential mapping regions for every
 many of the potential mapping regions have to be evaluated by a pairwise sequence alignment. Moreover, NextGenMap uses fast
 SIMD instructions (SSE) to accelerate the alignment calculations on the CPU. If available NextGenMap calculates the alignments
 on the GPU (using OpenCL/CUDA) resulting in a runtime reduction of another 20 - 50 %, debending on the underlying data set.
-
+</p><p>
 Our results show that NextGenMap using only the CPU is at least twice as fast as BWA. Using the GPU for the alignment 
 calculations increases the speedup to a factor of three. NextGenMap (GPU) even outperforms Bowtie2 by 10 - 50 % in 
 terms of runtime. More importantly, the number of correctly mapped reads is similar to Stampy, one of the most sensitive
