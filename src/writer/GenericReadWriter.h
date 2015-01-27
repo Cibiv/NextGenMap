@@ -65,12 +65,15 @@ protected:
 
 private:
 
+	static int const MAX_PASSED = 1000;
+	int passed[MAX_PASSED];
+
 public:
 	void WriteProlog() {
 		DoWriteProlog();
 	}
 
-	void WriteRead(MappedRead const * const read, bool mapped = true) {
+	void WriteRead(MappedRead * read, bool mapped = true) {
 		if (Config.Exists(ARGOS)) {
 			if (mapped) {
 				DoWriteRead(read, 0);
@@ -79,7 +82,9 @@ public:
 				DoWriteUnmappedRead(read);
 			}
 		} else {
-			if (mapped) {
+			//TODO: remove max passed limit!
+			if (mapped && read->Calculated < MAX_PASSED) {
+				int indexPassed = 0;
 				std::map<SequenceLocation, bool> iTable;
 				bool mappedOnce = false;
 				for (int i = 0; i < read->Calculated; ++i) {
@@ -101,11 +106,16 @@ public:
 						if (iTable.find(read->Scores[i].Location) == iTable.end()) {
 							iTable[read->Scores[i].Location] = true;
 							Log.Debug(4, "READ_%d\tOUTPUT\tWriting alignment CRM_%d", read->ReadId, i);
-							DoWriteRead(read, i);
+							//DoWriteRead(read, i);
+							passed[indexPassed++] = i;
 						} else {
 							Log.Debug(4, "READ_%d\tOUTPUT\tIgnoring duplicated alignment CRM_%d", read->ReadId, i);
 						}
 					}
+				}
+				read->Calculated = indexPassed;
+				for(int i = 0; i < indexPassed; ++i) {
+					DoWriteRead(read, passed[i]);
 				}
 
 				if (mappedOnce) {

@@ -152,6 +152,7 @@ void SAMWriter::DoWriteReadGeneric(MappedRead const * const read, int const scor
 	}
 	Print("AS:i:%d\t", (int) read->Scores[scoreID].Score.f);
 	Print("NM:i:%d\t", read->Alignments[scoreID].NM);
+	Print("NH:i:%d\t", read->Calculated);
 
 	if (Config.GetInt("bs_mapping") == 1) {
 		if (!(read->ReadId & 1) || read->Paired == 0) {
