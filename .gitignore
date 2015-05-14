@@ -9,3 +9,5 @@
 lib/libgff
 
 /docs/
+/test/
+/cibiv.sh
