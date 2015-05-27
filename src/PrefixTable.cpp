@@ -40,6 +40,7 @@ TableUnit* CompactPrefixTable::CurrentUnit;
 //that will be in the unit should also be in the index
 uloc CompactPrefixTable::kmerCountMinLocation;
 uloc CompactPrefixTable::kmerCountMaxLocation;
+int* CompactPrefixTable::kmerFreqsOverall;
 
 static const unsigned char ReverseTable16[] = { 0x00, 0x04, 0x08, 0x0C, 0x01, 0x05, 0x09, 0x0D, 0x02, 0x06, 0x0A, 0x0E, 0x03, 0x07, 0x0B,
 		0x0F };
@@ -228,6 +229,10 @@ int * CompactPrefixTable::CountKmerFreq(uint length) {
 
 			uloc offset = SequenceProvider.GetRefStart(m_CurGenSeq);
 			uloc len = SequenceProvider.GetRefLen(m_CurGenSeq);
+
+			if(offset >= kmerCountMaxLocation || (offset+len) <= kmerCountMinLocation)
+				continue;
+
 			char * seq = new char[len + 2];
 			SequenceProvider.DecodeRefSequence(seq, m_CurGenSeq, offset, len);
 
@@ -274,6 +279,10 @@ void CompactPrefixTable::Generate() {
 
 			uloc offset = SequenceProvider.GetRefStart(m_CurGenSeq);
 			uloc len = SequenceProvider.GetRefLen(m_CurGenSeq);
+
+			if(offset >= kmerCountMaxLocation || (offset+len) <= kmerCountMinLocation)
+				continue;
+
 			char * seq = new char[len + 2];
 			SequenceProvider.DecodeRefSequence(seq, m_CurGenSeq, offset, len);
 
@@ -332,7 +341,13 @@ uint CompactPrefixTable::createRefTableIndex(uint const length) {
 
 		//Create index based on kmer frequencies
 		int freq = freqs[i];
-		int total_freq = freq + freqs[compRevPrefix];
+
+		//Enforce kmer frequency limit
+		int total_freq;
+		if( m_UnitCount > 1 )
+			total_freq = kmerFreqsOverall[i] + kmerFreqsOverall[compRevPrefix];
+		else
+			total_freq = freq + freqs[compRevPrefix];
 		maxFreq = std::max(maxFreq, total_freq);
 
 		if (freq > 0 && total_freq < maxPrefixFreq) {
@@ -443,7 +458,21 @@ void CompactPrefixTable::BuildSNPTable()
 }
 
 void CompactPrefixTable::CreateTable(uint const length) {
+	if( m_UnitCount > 1 )
+	{
+		kmerCountMinLocation = 0;
+		kmerCountMaxLocation = SequenceProvider.GetConcatRefLen();
+		kmerFreqsOverall = CountKmerFreq(length);
+	} else {
+		kmerFreqsOverall = 0;
+	}
+
+	kmerCountMinLocation = 0;
+	kmerCountMaxLocation = c_tableLocMax;
 	for (int i = 0; i < m_UnitCount; ++i) {
+		skipBuild=0;
+		skipCount=0;
+		
 		CurrentUnit = &m_Units[i];
 		CurrentUnit->Offset = kmerCountMinLocation;
 
@@ -470,7 +499,10 @@ void CompactPrefixTable::CreateTable(uint const length) {
 
 		kmerCountMinLocation += c_tableLocMax;
 		kmerCountMaxLocation += c_tableLocMax;
+
 	}
+	
+	delete[] kmerFreqsOverall;
 
 //	long count = 0;
 //	RefEntry * dummy = new RefEntry(0);

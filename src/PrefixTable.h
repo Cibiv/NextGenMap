@@ -118,6 +118,7 @@ private:
 	//that will be in the unit should also be in the index
 	static uloc kmerCountMinLocation;
 	static uloc kmerCountMaxLocation;
+	static int* kmerFreqsOverall; //Used for enforcing max kmer frequency for multiple table units
 
 	int m_CurGenSeq;
 	static ulong lastPrefix;
