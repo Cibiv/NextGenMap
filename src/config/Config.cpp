@@ -508,6 +508,11 @@ _Config::_Config(int argc, char * argv[], bool praseArgs) {
 			Override("cpu_threads", 1);
 		}
 
+		Default("very_fast", 0);
+		Default("fast", 0);
+		Default("sensitive", 0);
+		Default("very_sensitive", 0);
+
 #ifdef __APPLE__
 		Default("gpu", 0);
 #endif

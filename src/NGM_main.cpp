@@ -252,6 +252,11 @@ General:\n\n\
                                Higher values will reduce the runtime but also\n\
                                have a negative effect on mapping sensitivity.\n\
                                (default: estimated from input data)\n\
+ --very-fast                   Scale estimated sensitivity: Much faster, much less accurate\n\
+ --fast                        Scale estimated sensitivity: Faster, less accurate\n\
+ --sensitive                   Scale estimated sensitivity: More accurate, slower\n\
+ --very-sensitive              Scale estimated sensitivity: Much more accurate, much slower\n\n\
+ \
  -i/--min-identity <0-1>       All reads mapped with an identity lower than\n\
                                this threshold will be reported as unmapped\n\
                                (default: 0.65)\n\

@@ -92,7 +92,11 @@ static const struct option long_options[] =
 		{ "vcf", 	   					required_argument, 0, 0 },
 		{ "max-read-length",            required_argument, 0, 0 },
 		{ "force-rlength-check",        no_argument,       0, 0 },
-		{ "bin-size",                       required_argument,       0, 0 },
+		{ "bin-size",                   required_argument,       0, 0 },
+		{ "very-fast",                  no_argument,       0, 0 },
+		{ "fast",                       no_argument,       0, 0 },
+		{ "sensitive",                  no_argument,       0, 0 },
+		{ "very-sensitive",             no_argument,       0, 0 },
 	0 };
 
 #endif /* OPTIONS_H_ */

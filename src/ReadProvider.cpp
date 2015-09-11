@@ -256,7 +256,7 @@ uint ReadProvider::init() {
 			Fatal();
 		}
 		if(Config.GetInt(MAX_READ_LENGTH) > 0) {
-			Log.Warning("Max. read length overwritten bei user: %d", Config.GetInt(MAX_READ_LENGTH));
+			Log.Warning("Max. read length overwritten by user: %d", Config.GetInt(MAX_READ_LENGTH));
 			maxLen = Config.GetInt(MAX_READ_LENGTH);
 		}
 		maxLen = (maxLen | 1) + 1;
@@ -307,7 +307,35 @@ uint ReadProvider::init() {
 
 				//m_CsSensitivity = (avg / ((max / avgLen))) * 0.90f + 0.05f;
 				m_CsSensitivity = std::min(std::max(0.3f, avg), 0.9f);
+
+				float sensitivityModifier = 0;
+
+				if(Config.GetInt("very_fast")+Config.GetInt("fast")+Config.GetInt("very_sensitive")+Config.GetInt("sensitive") > 1)
+				{
+					Log.Error("Sensitivity effort parameters are mutually exclusive. Please use either --very-fast/--fast/--sensitive/--very-sensitive.");
+					Fatal();					
+				}
+
+
+				if(Config.GetInt("very_fast"))
+				{
+					sensitivityModifier = (0.7f) * (1.0f - m_CsSensitivity);
+				} else if(Config.GetInt("fast")) {
+					sensitivityModifier = (0.35f) * (1.0f - m_CsSensitivity);
+				} else if(Config.GetInt("very_sensitive")) {
+					sensitivityModifier = (-0.7f) * m_CsSensitivity;
+				} else if(Config.GetInt("sensitive")) {
+					sensitivityModifier = (-0.35f) * m_CsSensitivity;
+				}
+
 				Log.Green("Estimated sensitivity: %f", m_CsSensitivity);
+
+				if( sensitivityModifier != 0 )
+				{
+					m_CsSensitivity += sensitivityModifier;
+					Log.Green("Modified sensitivity: %f (effort parameter)", m_CsSensitivity);
+				}
+				
 
 				if (Config.Exists("sensitivity")) {
 					//float x = Config.GetFloat("sensitivity", 0, 100);
