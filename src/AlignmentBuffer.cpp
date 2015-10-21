@@ -44,6 +44,7 @@ void AlignmentBuffer::addRead(MappedRead * read, int scoreID) {
 		SaveRead(read, read->hasCandidates());
 	} else {
 		if (!read->hasCandidates() || read->mappingQlty < min_mq) {
+			/* setting a min_mq > 0 can trigger a premature free of the read in line 211 */
 			//If read has no CMRs or mapping quality is lower than min mapping quality, output unmapped read
 			//read->clearScores(-1);
 			SaveRead(read, false);
