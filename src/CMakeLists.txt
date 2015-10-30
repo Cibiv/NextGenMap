@@ -53,6 +53,7 @@ target_link_libraries(ngm-core pthread)
 target_link_libraries(ngm-core MASonOpenCl)	
 TARGET_LINK_LIBRARIES(ngm-core BamTools-static)
 TARGET_LINK_LIBRARIES(ngm-core zlibstatic)
+#target_link_libraries(ngm-core "-lz")
 	
 add_definitions(-D _BAM) 
 
@@ -96,4 +97,5 @@ target_link_libraries(ngm-core-debug pthread)
 target_link_libraries(ngm-core-debug MASonOpenCl-debug)	
 TARGET_LINK_LIBRARIES(ngm-core-debug BamTools-static)
 TARGET_LINK_LIBRARIES(ngm-core-debug zlibstatic)
+#target_link_libraries(ngm-core-debug "-lz")
 

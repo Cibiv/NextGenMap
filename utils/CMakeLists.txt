@@ -66,4 +66,6 @@ TARGET_LINK_LIBRARIES(ngm-utils BamTools-static)
 TARGET_LINK_LIBRARIES(ngm-utils-debug BamTools-static)
 
 TARGET_LINK_LIBRARIES(ngm-utils zlibstatic)
+#TARGET_LINK_LIBRARIES(ngm-utils "-lz")
 TARGET_LINK_LIBRARIES(ngm-utils-debug zlibstatic)
+#TARGET_LINK_LIBRARIES(ngm-utils-debug "-lz")
