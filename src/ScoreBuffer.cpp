@@ -182,7 +182,7 @@ void ScoreBuffer::DoRun() {
 #ifdef DEBUGLOG
 						debugScoresFinished(cur_read);
 #endif
-						if (maxTopScores == 1) {
+						if (topN == 1) {
 							top1SE(cur_read);
 						} else {
 							topNSE(cur_read);
@@ -196,7 +196,7 @@ void ScoreBuffer::DoRun() {
 					debugScoresFinished(cur_read->Paired);
 #endif
 					//all scores computed for both mates
-					if (maxTopScores == 1) {
+					if (topN == 1) {
 						if (!fastPairing) {
 							if (cur_read->Paired->hasCandidates()) {
 								top1PE(cur_read);
@@ -253,7 +253,7 @@ void ScoreBuffer::top1SE(MappedRead* read) {
 
 	Log.Debug(16, "READ_%d\tSCORES\tBest score %f (CMR_%d) number %d, second best %f, MQ: %d", read->ReadId, bestScore, bestScoreIndex, numBestScore, secondBestScore, read->mappingQlty);
 
-	if (numBestScore == 1 || !topScoresOnly) {
+	if (numBestScore == 1 || !strata) {
 		assert(read->hasCandidates());
 
 		//clear all sub-optimal scores and submit best-scoring region to alignment computation
@@ -290,11 +290,13 @@ void ScoreBuffer::topNSE(MappedRead* read) {
 
 	read->numTopScores = numTopScores;
 
-	if (read->numTopScores <= maxTopScores || !topScoresOnly) {
+	if (read->numTopScores <= topN || !strata) {
 
 		//Set number of scores to number of best scores (only these will be reported)
-		if (topScoresOnly) {
+		if (strata) {
 			numScores = numTopScores;
+		} else {
+			numScores = std::min(numScores, topN);
 		}
 
 		//compute mapping quality
@@ -307,7 +309,7 @@ void ScoreBuffer::topNSE(MappedRead* read) {
 		//Submit reads to alignment computation
 		out->addRead(read, 0);
 		for (int j = 1; j < numScores; ++j) {
-			if (topScoresOnly
+			if (strata
 					&& read->Scores[0].Score.f != read->Scores[j].Score.f) {
 				Log.Error("Internal error while processing alignment scores for read %s", read->name);
 				Fatal();
@@ -412,7 +414,7 @@ void ScoreBuffer::top1PE(MappedRead* read) {
 	}
 	Log.Verbose("Pairs with equal score: %d", equalScoreFound);
 	if (topScore > 0.0f) {
-		if (equalScoreFound <= 0 || !topScoresOnly) {
+		if (equalScoreFound <= 0 || !strata) {
 			pairDistSum += distance;
 			pairDistCount += 1;
 			NGM.Stats->insertSize = pairDistSum * 1.0f / (pairDistCount);
