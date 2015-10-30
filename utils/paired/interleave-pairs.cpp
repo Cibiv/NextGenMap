@@ -164,7 +164,7 @@ int parseNext(map<string, MappedRead *> & pairs, MappedRead * read, Writer * wri
 			} else {
 				entryRight = entryLeft;
 				entryLeft = pairs[nameLeft];
-				if (!pairs[nameLeft]->ReadId == 0) {
+				if (!(pairs[nameLeft]->ReadId == 0)) {
 					cout << "Warning: Found read pair in a single file (Name: " << nameLeft
 					<< ")! Do you have two reads with the same name in one file?" << std::endl;
 				}
