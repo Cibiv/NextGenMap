@@ -32,7 +32,10 @@ bool sortLocationScore(LocationScore a, LocationScore b) {
 }
 
 int ScoreBuffer::computeMQ(float bestScore, float secondBestScore) {
-	int mq = ceil(MAX_MQ * (bestScore - secondBestScore) / bestScore);
+	int mq = 0;
+	if (bestScore > 0 && secondBestScore >= 0) {
+		ceil(MAX_MQ * (bestScore - secondBestScore) / bestScore);
+	}
 	return mq;
 }
 
@@ -309,8 +312,7 @@ void ScoreBuffer::topNSE(MappedRead* read) {
 		//Submit reads to alignment computation
 		out->addRead(read, 0);
 		for (int j = 1; j < numScores; ++j) {
-			if (strata
-					&& read->Scores[0].Score.f != read->Scores[j].Score.f) {
+			if (strata && read->Scores[0].Score.f != read->Scores[j].Score.f) {
 				Log.Error("Internal error while processing alignment scores for read %s", read->name);
 				Fatal();
 			}
