@@ -85,6 +85,8 @@ protected:
 
 	uint hpoc;
 
+	int maxPrefixFreq;
+
 	inline uint Hash(uloc n) {
 		//Multiplication Method (Corment)
 		//static float A = 0.5f * (sqrt(5) - 1);

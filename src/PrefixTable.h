@@ -94,8 +94,6 @@ public:
 	const RefEntry* GetRefEntry(ulong prefix, RefEntry* entry) const;
 	uint GetRefEntryChainLength() const;
 
-	static int maxPrefixFreq;
-
 private:
 	//Biggest location value supported by a single table (precision of used location data type)
 	//=> Determines: How many table units do we need?
@@ -153,6 +151,8 @@ private:
 	void saveToFile(const char* fileName, const uint refIndexSize);
 	bool readFromFile(const char* fileName);
 
+	char * toPrefix(ulong prefix);
+	void stats();
 	void test();
 };
 

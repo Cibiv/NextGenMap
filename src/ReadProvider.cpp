@@ -48,14 +48,16 @@ int m_CurrentReadLength;
 ReadProvider::ReadProvider() :
 		parser1(0), parser2(0), peDelimiter(
 		Config.GetString("pe_delimiter")[0]), isPaired(
-		Config.GetInt("paired") > 0), skipMateCheck(Config.GetInt(SKIP_MATE_CHECK) == 1) {
+		Config.GetInt("paired") > 0), skipMateCheck(
+		Config.GetInt(SKIP_MATE_CHECK) == 1) {
 
 }
 
 int CollectResultsFallback(int const readLength) {
 	float maxCurrent = 0;
 
-	for (std::map<uloc, float>::iterator itr = iTable.begin(); itr != iTable.end(); itr++) {
+	for (std::map<uloc, float>::iterator itr = iTable.begin();
+			itr != iTable.end(); itr++) {
 		maxCurrent = std::max(maxCurrent, itr->second);
 	}
 
@@ -73,48 +75,58 @@ int CollectResultsFallback(int const readLength) {
 	return 0;
 }
 
-static void PrefixSearch(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo, void* data) {
+static void PrefixSearch(ulong prefix, uloc pos, ulong mutateFrom,
+		ulong mutateTo, void* data) {
+
+	static const int maxPrefixFreq = Config.GetInt(MAX_KFREQ);
 
 	RefEntry const * entries = m_RefProvider->GetRefEntry(prefix, m_entry); // Liefert eine liste aller Vorkommen dieses Praefixes in der Referenz
 	RefEntry const * cur = entries;
 
-	for (int i = 0; i < m_entryCount; i++) {
-		//Get kmer-weight.
+	if (cur != 0 && cur->refTotal < maxPrefixFreq) {
+		for (int i = 0; i < m_entryCount; i++) {
+			//Get kmer-weight.
 //		float weight = cur->weight;
-		float weight = 1.0f;
+			float weight = 1.0f;
 
-		int const n = cur->refCount;
+			int const n = cur->refCount;
 
-		if (cur->reverse) {
-			for (int i = 0; i < n; ++i) {
-				uloc curLoc = cur->getRealLocation(cur->ref[i]) - (m_CurrentReadLength - (pos + CS::prefixBasecount));
-				curLoc = GetBin(curLoc); // position offset
-				if (iTable.count(curLoc) == 0) {
-					iTable[curLoc] = weight;
-				} else {
-					iTable[curLoc] += weight;
+			if (cur->reverse) {
+				for (int i = 0; i < n; ++i) {
+					uloc curLoc =
+							cur->getRealLocation(cur->ref[i])
+									- (m_CurrentReadLength
+											- (pos + CS::prefixBasecount));
+					curLoc = GetBin(curLoc); // position offset
+					if (iTable.count(curLoc) == 0) {
+						iTable[curLoc] = weight;
+					} else {
+						iTable[curLoc] += weight;
+					}
+				}
+
+			} else {
+				for (int i = 0; i < n; ++i) {
+					uloc curLoc = cur->getRealLocation(cur->ref[i]) - pos;
+					curLoc = GetBin(curLoc); // position offset
+					if (iTable.count(curLoc) == 0) {
+						iTable[curLoc] = weight;
+					} else {
+						iTable[curLoc] += weight;
+					}
 				}
 			}
 
-		} else {
-			for (int i = 0; i < n; ++i) {
-				uloc curLoc = cur->getRealLocation(cur->ref[i]) - pos;
-				curLoc = GetBin(curLoc); // position offset
-				if (iTable.count(curLoc) == 0) {
-					iTable[curLoc] = weight;
-				} else {
-					iTable[curLoc] += weight;
-				}
-			}
+			cur++;
 		}
-
-		cur++;
 	}
 }
 
-void PrefixMutateSearchEx(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo, void* data, int mpos = 0);
+void PrefixMutateSearchEx(ulong prefix, uloc pos, ulong mutateFrom,
+		ulong mutateTo, void* data, int mpos = 0);
 
-void PrefixMutateSearch(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo, void* data) {
+void PrefixMutateSearch(ulong prefix, uloc pos, ulong mutateFrom,
+		ulong mutateTo, void* data) {
 	static int const cMutationLocLimit =
 	Config.Exists("bs_cutoff") ? Config.GetInt("bs_cutoff") : 6;
 	ulong const mask = 0x3;
@@ -130,7 +142,8 @@ void PrefixMutateSearch(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo
 		PrefixMutateSearchEx(prefix, pos, mutateFrom, mutateTo, data);
 }
 
-void PrefixMutateSearchEx(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo, void* data, int mpos) {
+void PrefixMutateSearchEx(ulong prefix, uloc pos, ulong mutateFrom,
+		ulong mutateTo, void* data, int mpos) {
 	PrefixSearch(prefix, pos, mutateFrom, mutateTo, data);
 
 	ulong const mask = 0x3;
@@ -140,16 +153,24 @@ void PrefixMutateSearchEx(ulong prefix, uloc pos, ulong mutateFrom, ulong mutate
 		if (cur == mutateFrom) {
 			ulong p1 = (prefix & ~(mask << (i * 2)));
 			ulong p2 = (mutateTo << (i * 2));
-			PrefixMutateSearchEx(p1 | p2, pos, mutateFrom, mutateTo, data, i + 1);
+			PrefixMutateSearchEx(p1 | p2, pos, mutateFrom, mutateTo, data,
+					i + 1);
 		}
 	}
 }
 
 uint ReadProvider::init() {
-	typedef void (*PrefixIterationFn)(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo, void* data);
+	typedef void (*PrefixIterationFn)(ulong prefix, uloc pos, ulong mutateFrom,
+			ulong mutateTo, void* data);
 	PrefixIterationFn fnc = &PrefixSearch;
 
 	bool const isPaired = Config.GetInt("paired") > 1;
+
+	if (isPaired) {
+		Log.Message("Input is paired end data.");
+	} else {
+		Log.Message("Input is single end data.");
+	}
 
 	char const * const fileName1 =
 	Config.Exists("qry1") ?
@@ -157,6 +178,11 @@ uint ReadProvider::init() {
 							Config.GetString("qry");
 	char const * const fileName2 =
 	Config.Exists("qry2") ? Config.GetString("qry2") : 0;
+
+	Log.Message("Opening file %s for reading", fileName1);
+	if (fileName2 != 0) {
+		Log.Message("Opening file %s for reading", fileName2);
+	}
 
 	bool m_EnableBS = false;
 	m_EnableBS = (Config.GetInt("bs_mapping", 0, 1) == 1);
@@ -170,7 +196,8 @@ uint ReadProvider::init() {
 	Timer tmr;
 	tmr.ST();
 	size_t maxLen = 0;
-	bool estimate = !(Config.Exists("skip_estimate") && Config.GetInt("skip_estimate"));
+	bool estimate = !(Config.Exists("skip_estimate")
+			&& Config.GetInt("skip_estimate"));
 	if (!Config.Exists("qry_max_len") || estimate) {
 		//default value for estimation
 		static int const qryMaxLen = 10000;
@@ -208,7 +235,8 @@ uint ReadProvider::init() {
 //				Log.Message("Qlty: %s", read->qlty);
 
 					readCount += 1;
-					if (estimate && (readCount % estimateStepSize) == 0 && readCount < estimateSize) {
+					if (estimate && (readCount % estimateStepSize) == 0
+							&& readCount < estimateSize) {
 						ulong mutateFrom;
 						ulong mutateTo;
 						if (isPaired && (readCount & 1)) {
@@ -221,7 +249,9 @@ uint ReadProvider::init() {
 							mutateTo = 0x1;
 						}
 						m_CurrentReadLength = read->length;
-						CS::PrefixIteration((char const *) read->Seq, read->length, fnc, mutateFrom, mutateTo, (void *) this, (uint) 0, 0);
+						CS::PrefixIteration((char const *) read->Seq,
+								read->length, fnc, mutateFrom, mutateTo,
+								(void *) this, (uint) 0, 0);
 						CollectResultsFallback(m_CurrentReadLength);
 					} else if (readCount == (estimateSize + 1)) {
 						if ((maxLen - minLen) < 10 && !Config.Exists(ARGOS)) {
@@ -255,7 +285,7 @@ uint ReadProvider::init() {
 			Log.Error("No reads found in input file.");
 			Fatal();
 		}
-		if(Config.GetInt(MAX_READ_LENGTH) > 0) {
+		if (Config.GetInt(MAX_READ_LENGTH) > 0) {
 			Log.Warning("Max. read length overwritten by user: %d", Config.GetInt(MAX_READ_LENGTH));
 			maxLen = Config.GetInt(MAX_READ_LENGTH);
 		}
@@ -266,8 +296,6 @@ uint ReadProvider::init() {
 			Log.Warning("Max. supported read length is 1000bp. All reads longer than 1000bp will be hard clipped in the output.");
 			maxLen = maxReadLength;
 		}
-
-
 
 		((_Config*) _config)->Override("qry_max_len", (int) maxLen);
 		((_Config*) _config)->Override("qry_avg_len", (int) avgLen);
@@ -310,32 +338,29 @@ uint ReadProvider::init() {
 
 				float sensitivityModifier = 0;
 
-				if(Config.GetInt("very_fast")+Config.GetInt("fast")+Config.GetInt("very_sensitive")+Config.GetInt("sensitive") > 1)
-				{
+				if (Config.GetInt("very_fast") + Config.GetInt("fast")
+						+ Config.GetInt("very_sensitive")
+						+ Config.GetInt("sensitive") > 1) {
 					Log.Error("Sensitivity effort parameters are mutually exclusive. Please use either --very-fast/--fast/--sensitive/--very-sensitive.");
-					Fatal();					
+					Fatal();
 				}
 
-
-				if(Config.GetInt("very_fast"))
-				{
+				if (Config.GetInt("very_fast")) {
 					sensitivityModifier = (0.7f) * (1.0f - m_CsSensitivity);
-				} else if(Config.GetInt("fast")) {
+				} else if (Config.GetInt("fast")) {
 					sensitivityModifier = (0.35f) * (1.0f - m_CsSensitivity);
-				} else if(Config.GetInt("very_sensitive")) {
+				} else if (Config.GetInt("very_sensitive")) {
 					sensitivityModifier = (-0.7f) * m_CsSensitivity;
-				} else if(Config.GetInt("sensitive")) {
+				} else if (Config.GetInt("sensitive")) {
 					sensitivityModifier = (-0.35f) * m_CsSensitivity;
 				}
 
 				Log.Green("Estimated sensitivity: %f", m_CsSensitivity);
 
-				if( sensitivityModifier != 0 )
-				{
+				if (sensitivityModifier != 0) {
 					m_CsSensitivity += sensitivityModifier;
 					Log.Green("Modified sensitivity: %f (effort parameter)", m_CsSensitivity);
 				}
-				
 
 				if (Config.Exists("sensitivity")) {
 					//float x = Config.GetFloat("sensitivity", 0, 100);
@@ -426,7 +451,8 @@ MappedRead * ReadProvider::NextRead(IParser * parser, int const id) {
 	return read;
 }
 
-IParser * ReadProvider::DetermineParser(char const * fileName, int const qryMaxLen) {
+IParser * ReadProvider::DetermineParser(char const * fileName,
+		int const qryMaxLen) {
 
 	gzFile fp = gzopen(fileName, "r");
 	if (!fp) {
@@ -440,7 +466,8 @@ IParser * ReadProvider::DetermineParser(char const * fileName, int const qryMaxL
 	}
 
 	int count = 0;
-	for (size_t i = 0; i < 1000 && buffer[i] != '\0' && buffer[i] != '\n'; i++) {
+	for (size_t i = 0; i < 1000 && buffer[i] != '\0' && buffer[i] != '\n';
+			i++) {
 		if (buffer[i] == '\t') {
 			count++;
 		}
@@ -481,7 +508,8 @@ MappedRead * ReadProvider::GenerateSingleRead(int const readid) {
 }
 
 // Sequential (important for pairs!) read generation
-bool ReadProvider::GenerateRead(int const readid1, MappedRead * & read1, int const readid2, MappedRead * & read2) {
+bool ReadProvider::GenerateRead(int const readid1, MappedRead * & read1,
+		int const readid2, MappedRead * & read2) {
 
 	if (isPaired) {
 		static bool const isInterleaved = Config.Exists("qry");
@@ -511,6 +539,7 @@ bool ReadProvider::GenerateRead(int const readid1, MappedRead * & read1, int con
 		} else {
 			Log.Error("Error in input file. Number of reads in input not even. Please check the input or mapped in single-end mode.");
 			Fatal();
+			return false;
 		}
 	} else {
 		read1 = GenerateSingleRead(readid1);

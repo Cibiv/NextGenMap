@@ -13,8 +13,7 @@
 #define module_name "CS"
 
 //static const int cInvalidLocation = -99999999;
-static const SequenceLocation sInvalidLocation( 9223372036854775808u, 0, false);
-
+static const SequenceLocation sInvalidLocation(9223372036854775808u, 0, false);
 
 volatile int CS::s_ThreadCount = 0;
 
@@ -31,13 +30,15 @@ uint const cPrefixBaseSkip = 0;
 float const cOverflowThresh = 0.1f;
 float const cOverflowLimit = 10;
 
-
-void CS::PrefixIteration(char const * sequence, uloc length, PrefixIterationFn func, ulong mutateFrom, ulong mutateTo, void* data, uint prefixskip, uloc offset, int prefixBaseCount) {
+void CS::PrefixIteration(char const * sequence, uloc length,
+		PrefixIterationFn func, ulong mutateFrom, ulong mutateTo, void* data,
+		uint prefixskip, uloc offset, int prefixBaseCount) {
 	prefixBasecount = prefixBaseCount;
 	prefixBits = prefixBasecount * 2;
 	prefixMask = ((ulong) 1 << prefixBits) - 1;
 
-	CS::PrefixIteration(sequence, length, func, mutateFrom, mutateTo, data, prefixskip, offset);
+	CS::PrefixIteration(sequence, length, func, mutateFrom, mutateTo, data,
+			prefixskip, offset);
 
 	prefixBasecount = Config.GetInt("kmer", 4, 32);
 	prefixBits = prefixBasecount * 2;
@@ -50,7 +51,8 @@ void CS::PrefixIteration(char const * sequence, uloc length, PrefixIterationFn f
 //ulong mutateFrom = 0x2;
 //ulong mutateTo = 0x1;
 
-void CS::PrefixMutateSearch(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo, void* data) {
+void CS::PrefixMutateSearch(ulong prefix, uloc pos, ulong mutateFrom,
+		ulong mutateTo, void* data) {
 	static int const cMutationLocLimit = Config.GetInt("bs_cutoff");
 	ulong const mask = 0x3;
 
@@ -65,7 +67,8 @@ void CS::PrefixMutateSearch(ulong prefix, uloc pos, ulong mutateFrom, ulong muta
 		PrefixMutateSearchEx(prefix, pos, mutateFrom, mutateTo, data);
 }
 
-void CS::PrefixMutateSearchEx(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo, void* data, int mpos) {
+void CS::PrefixMutateSearchEx(ulong prefix, uloc pos, ulong mutateFrom,
+		ulong mutateTo, void* data, int mpos) {
 	PrefixSearch(prefix, pos, mutateFrom, mutateTo, data);
 
 	ulong const mask = 0x3;
@@ -75,56 +78,65 @@ void CS::PrefixMutateSearchEx(ulong prefix, uloc pos, ulong mutateFrom, ulong mu
 		if (cur == mutateFrom) {
 			ulong p1 = (prefix & ~(mask << (i * 2)));
 			ulong p2 = (mutateTo << (i * 2));
-			PrefixMutateSearchEx(p1 | p2, pos, mutateFrom, mutateTo, data, i + 1);
+			PrefixMutateSearchEx(p1 | p2, pos, mutateFrom, mutateTo, data,
+					i + 1);
 		}
 	}
 }
 
-void CS::PrefixSearch(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo, void* data) {
+void CS::PrefixSearch(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo,
+		void* data) {
 	CS * cs = (CS*) data;
 
-	RefEntry const * entries = cs->m_RefProvider->GetRefEntry(prefix, cs->m_entry); // Liefert eine liste aller Vorkommen dieses Praefixes in der Referenz
+	RefEntry const * entries = cs->m_RefProvider->GetRefEntry(prefix,
+			cs->m_entry); // Liefert eine liste aller Vorkommen dieses Praefixes in der Referenz
 	RefEntry const * cur = entries;
+	if (cur != 0 && cur->refTotal < cs->maxPrefixFreq) {
 
-	int const readLength = cs->m_CurrentReadLength;
 
-	if (cur != 0 && cur->refTotal == 0) {
-		kCount += 1;
-	}
+		int const readLength = cs->m_CurrentReadLength;
 
-	for( int i = 0; i < cs->m_entryCount; i ++ ) {
-		//Get kmer-weight.
-		//float weight = cur->weight / 100.0f;
-		//cs->weightSum += cur->weight;
-		float weight = 1.0f;
+		if (cur != 0 && cur->refTotal == 0) {
+			kCount += 1;
+		}
 
-		uloc correction = (cur->reverse) ? (readLength - (pos + CS::prefixBasecount)) : pos;
+		for (int i = 0; i < cs->m_entryCount; i++) {
+			//Get kmer-weight.
+			//float weight = cur->weight / 100.0f;
+			//cs->weightSum += cur->weight;
+			float weight = 1.0f;
+
+			uloc correction =
+					(cur->reverse) ?
+							(readLength - (pos + CS::prefixBasecount)) : pos;
 
 //#ifdef _DEBUGCSVERBOSE
 //		Log.Message("Qry Seq %i - Prefix 0x%x got %i locs (sum %i)", cs->m_CurrentSeq, prefix, cur->refTotal);
 //#endif
 
-		int const n = cur->refCount;
+			int const n = cur->refCount;
 
+			for (int i = 0; i < n; ++i) {
+				uloc loc = cur->getRealLocation(cur->ref[i]);
+				cs->AddLocationStd(GetBin(loc - correction), cur->reverse,
+						weight);
+			}
 
-		for (int i = 0; i < n; ++i) {
-			uloc loc = cur->getRealLocation(cur->ref[i]);
-			cs->AddLocationStd(GetBin( loc - correction ), cur->reverse, weight);
+			cur++;
 		}
-
-		cur ++;
 	}
 }
 
-
-void CS::AddLocationStd(uloc const m_Location, bool const reverse, double const freq) {
+void CS::AddLocationStd(uloc const m_Location, bool const reverse,
+		double const freq) {
 	bool newEntry = false;
 
-	CSTableEntry* entry = rTable + Hash(m_Location);	
+	CSTableEntry* entry = rTable + Hash(m_Location);
 	CSTableEntry* const maxEntry = rTable + c_SrchTableLen;
 
 	//uint hpo = Hash( m_Location );
-	while ((newEntry = (entry->state & 0x7FFFFFFF) == currentState) && !(entry->m_Location == m_Location)) {
+	while ((newEntry = (entry->state & 0x7FFFFFFF) == currentState)
+			&& !(entry->m_Location == m_Location)) {
 		++entry;
 		if (entry >= maxEntry)
 			entry = rTable;
@@ -192,7 +204,7 @@ void CS::debugCS(MappedRead * read, int& n, float& mi_Threshhold) {
 
 			int refNameLength = 0;
 			if (rTable[i].fScore > 0.0f) {
-				if(rTable[i].fScore >= mi_Threshhold) {
+				if (rTable[i].fScore >= mi_Threshhold) {
 					Log.Debug(8192, "READ_%d\tCS_RESULTS\tInternal location: %llu (+), Location: %llu (Ref: %s), Score: %f (ACCEPT)", read->ReadId, rTable[i].m_Location, loc.m_Location, SequenceProvider.GetRefName(loc.getrefId(), refNameLength), rTable[i].fScore);
 					accepted += 1;
 				} else {
@@ -201,7 +213,7 @@ void CS::debugCS(MappedRead * read, int& n, float& mi_Threshhold) {
 				count += 1;
 			}
 			if (rTable[i].rScore > 0.0f) {
-				if(rTable[i].rScore >= mi_Threshhold) {
+				if (rTable[i].rScore >= mi_Threshhold) {
 					Log.Debug(8192, "READ_%d\tCS_RESULTS\tInternal location: %llu (-), Location: %llu (Ref: %s), Score: %f (ACCEPT)", read->ReadId, rTable[i].m_Location, loc.m_Location, SequenceProvider.GetRefName(loc.getrefId(), refNameLength), rTable[i].rScore);
 					accepted += 1;
 				} else {
@@ -273,7 +285,8 @@ int CS::CollectResultsFallback(MappedRead * read) {
 	return 0;
 }
 
-void CS::SendToBuffer(MappedRead * read, ScoreBuffer * sw, AlignmentBuffer * out) {
+void CS::SendToBuffer(MappedRead * read, ScoreBuffer * sw,
+		AlignmentBuffer * out) {
 	if (read == 0)
 		return;
 
@@ -336,7 +349,8 @@ int CS::RunBatch(ScoreBuffer * sw, AlignmentBuffer * out) {
 		if (!fallback) {
 			try {
 				hpoc = c_SrchTableLen * 0.333f;
-				PrefixIteration(qrySeq, qryLen, pFunc, mutateFrom, mutateTo, this, m_PrefixBaseSkip);
+				PrefixIteration(qrySeq, qryLen, pFunc, mutateFrom, mutateTo,
+						this, m_PrefixBaseSkip);
 				nScoresSum += CollectResultsStd(m_CurrentBatch[i]);
 			} catch (int overflow) {
 				++m_Overflows;
@@ -352,7 +366,7 @@ int CS::RunBatch(ScoreBuffer * sw, AlignmentBuffer * out) {
 				fallback = false;
 				try {
 
-					SetSearchTableBitLen( c_SrchTableBitLenBackup + x );
+					SetSearchTableBitLen(c_SrchTableBitLenBackup + x);
 
 					rListLength = 0;
 					//currentState = 2 * i + 1;
@@ -361,7 +375,8 @@ int CS::RunBatch(ScoreBuffer * sw, AlignmentBuffer * out) {
 					currentThresh = 0.0f;
 
 					hpoc = c_SrchTableLen * 0.777f;
-					PrefixIteration(qrySeq, qryLen, pFunc, mutateFrom, mutateTo, this, m_PrefixBaseSkip);
+					PrefixIteration(qrySeq, qryLen, pFunc, mutateFrom, mutateTo,
+							this, m_PrefixBaseSkip);
 					nScoresSum += CollectResultsStd(m_CurrentBatch[i]);
 
 				} catch (int overflow) {
@@ -369,7 +384,7 @@ int CS::RunBatch(ScoreBuffer * sw, AlignmentBuffer * out) {
 					x += 1;
 				}
 			}
-			SetSearchTableBitLen( c_SrchTableBitLenBackup );
+			SetSearchTableBitLen(c_SrchTableBitLenBackup);
 		}
 
 		SendToBuffer(m_CurrentBatch[i], sw, out);
@@ -397,7 +412,9 @@ void CS::DoRun() {
 
 	NGM.AquireOutputLock();
 	oclAligner = NGM.CreateAlignment(gpu | (std::min(Config.GetInt("format", 0, 2), 1) << 8));
-	AlignmentBuffer * alignmentBuffer = new AlignmentBuffer(Config.Exists("output") ? Config.GetString("output") : 0, oclAligner);
+	AlignmentBuffer * alignmentBuffer = new AlignmentBuffer(
+			Config.Exists("output") ? Config.GetString("output") : 0,
+			oclAligner);
 	ScoreBuffer * scoreBuffer = new ScoreBuffer(oclAligner, alignmentBuffer);
 	NGM.ReleaseOutputLock();
 
@@ -459,8 +476,10 @@ void CS::DoRun() {
 		m_Overflows = 0;
 	}
 
-	delete scoreBuffer; scoreBuffer = 0;
-	delete alignmentBuffer; alignmentBuffer = 0;
+	delete scoreBuffer;
+	scoreBuffer = 0;
+	delete alignmentBuffer;
+	alignmentBuffer = 0;
 	NGM.DeleteAlignment(oclAligner);
 	Log.Debug(LOG_CS_DETAILS, "CS Thread %i finished (%i reads processed, %i reads written, %i reads discarded)", m_TID, m_ProcessedReads, m_WrittenReads, m_DiscardedReads);
 }
@@ -471,22 +490,29 @@ void CS::Init() {
 
 	bool m_EnableBS = (Config.GetInt("bs_mapping", 0, 1) == 1);
 	if (m_EnableBS) {
-		static int const cMutationLocLimit = Config.Exists("bs_cutoff") ? Config.GetInt("bs_cutoff") : 6;
+		static int const cMutationLocLimit =
+				Config.Exists("bs_cutoff") ? Config.GetInt("bs_cutoff") : 6;
 		Log.Message("BS mapping enabled. Max. number of A/T per k-mer set to %d", cMutationLocLimit);
 	}
 }
 
 CS::CS(bool useBuffer) :
-		m_CSThreadID((useBuffer) ? (AtomicInc(&s_ThreadCount) - 1) : -1), m_BatchSize(cBatchSize / Config.GetInt("qry_avg_len")), m_ProcessedReads(
-				0), m_WrittenReads(0), m_DiscardedReads(0), m_EnableBS(false), m_Overflows(0), m_entry(0), m_PrefixBaseSkip(0), m_Fallback(false) // cTableLen <= 0 means always use fallback
+		m_CSThreadID((useBuffer) ? (AtomicInc(&s_ThreadCount) - 1) : -1), m_BatchSize(
+				cBatchSize / Config.GetInt("qry_avg_len")), m_ProcessedReads(0), m_WrittenReads(
+				0), m_DiscardedReads(0), m_EnableBS(false), m_Overflows(0), m_entry(
+				0), m_PrefixBaseSkip(0), m_Fallback(false) // cTableLen <= 0 means always use fallback
 {
 
-	SetSearchTableBitLen( Config.Exists("search_table_length") ? Config.GetInt("search_table_length") : 16 );
+	SetSearchTableBitLen(
+			Config.Exists("search_table_length") ?
+					Config.GetInt("search_table_length") : 16);
 
 	m_EnableBS = (Config.GetInt("bs_mapping", 0, 1) == 1);
 
 	if (m_EnableBS) {
-		m_PrefixBaseSkip = (Config.Exists("kmer_skip")) ? Config.GetInt("kmer_skip", 0, -1) : cPrefixBaseSkip;
+		m_PrefixBaseSkip =
+				(Config.Exists("kmer_skip")) ?
+						Config.GetInt("kmer_skip", 0, -1) : cPrefixBaseSkip;
 	}
 
 	rTable = 0;
@@ -497,15 +523,16 @@ CS::CS(bool useBuffer) :
 	ofp2 = fopen("cs-results.txt", "w");
 #endif
 
+	maxPrefixFreq = Config.GetInt(MAX_KFREQ);
+
 	currentState = 0;
 	tmpSize = 10000;
 	tmp = new LocationScore[tmpSize];
 }
 
-void CS::AllocRefEntryChain()
-{
+void CS::AllocRefEntryChain() {
 	m_entryCount = m_RefProvider->GetRefEntryChainLength();
-	m_entry = new RefEntry[ m_entryCount ];
+	m_entry = new RefEntry[m_entryCount];
 }
 
 CS::~CS() {
@@ -528,7 +555,6 @@ CS::~CS() {
 		m_entry = 0;
 	}
 }
-
 
 void CS::CheckFallback() {
 
