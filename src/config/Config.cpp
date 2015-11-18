@@ -449,6 +449,10 @@ _Config::_Config(int argc, char * argv[], bool praseArgs) {
 				Log.Error("'--bs-mapping' and '--affine' can't be used at the same time!");
 				Fatal();
 			}
+			if(Exists(SLAM_SEQ)) {
+				Log.Error("'--bs-mapping' and '--slam-seq' can't be used at the same time!");
+				Fatal();
+			}
 			if(Exists(ENDTOEND)) {
 				Log.Error("'--bs-mapping' and '--e/--end-to-end' can't be used at the same time!");
 				Fatal();
@@ -489,6 +493,8 @@ _Config::_Config(int argc, char * argv[], bool praseArgs) {
 
 		//BS-mapping
 		Default("bs_cutoff", 6);
+
+		Default(SLAM_SEQ, 0);
 
 		//Others
 		Default("no_progress", 0);
@@ -667,4 +673,3 @@ gpu = 1 { 0 }\n\
 mason_path = 	/software/ngm/ngm/mason/	\n\
 \n\
 \n";
-

@@ -110,7 +110,7 @@ void AlignmentBuffer::DoRun() {
 
 		//start alignment
 		int aligned = aligner->BatchAlign(alignmode | (std::max(outputformat, 1) << 8), count, refBuffer, qryBuffer, alignBuffer,
-				(m_EnableBS) ? m_DirBuffer : 0);
+				(m_EnableBS || slamSeq) ? m_DirBuffer : 0);
 
 		Log.Debug(32, "INFO\tALGN\t%d alignments computed (out of %d)", aligned, count);
 

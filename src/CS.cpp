@@ -54,6 +54,7 @@ void CS::PrefixIteration(char const * sequence, uloc length,
 void CS::PrefixMutateSearch(ulong prefix, uloc pos, ulong mutateFrom,
 		ulong mutateTo, void* data) {
 	static int const cMutationLocLimit = Config.GetInt("bs_cutoff");
+	static bool const slamSeq = Config.GetInt(SLAM_SEQ) & 0x4;
 	ulong const mask = 0x3;
 
 	int mutationLocs = 0;
@@ -63,8 +64,32 @@ void CS::PrefixMutateSearch(ulong prefix, uloc pos, ulong mutateFrom,
 			++mutationLocs;
 	}
 
-	if (mutationLocs <= cMutationLocLimit)
-		PrefixMutateSearchEx(prefix, pos, mutateFrom, mutateTo, data);
+	if (slamSeq) {
+		CS * cs = (CS*) data;
+		cs->m_CurrentMutLocs = 1;
+		PrefixSearch(prefix, pos, mutateFrom, mutateTo, data);
+		cs->m_CurrentMutLocs = mutationLocs + 1;
+		PrefixMutateSearchSlamSeq(prefix, pos, mutateFrom, mutateTo, data);
+	} else {
+		if (mutationLocs <= cMutationLocLimit) {
+			PrefixMutateSearchEx(prefix, pos, mutateFrom, mutateTo, data);
+		}
+	}
+}
+
+void CS::PrefixMutateSearchSlamSeq(ulong prefix, uloc pos, ulong mutateFrom,
+		ulong mutateTo, void* data, int mpos) {
+
+	ulong const mask = 0x3;
+	for (int i = mpos; i < (int) prefixBasecount; ++i) {
+		ulong cur = mask & (prefix >> (i * 2));
+
+		if (cur == mutateFrom) {
+			ulong p1 = (prefix & ~(mask << (i * 2)));
+			ulong p2 = (mutateTo << (i * 2));
+			PrefixSearch(p1 | p2, pos, mutateFrom, mutateTo, data);
+		}
+	}
 }
 
 void CS::PrefixMutateSearchEx(ulong prefix, uloc pos, ulong mutateFrom,
@@ -86,6 +111,7 @@ void CS::PrefixMutateSearchEx(ulong prefix, uloc pos, ulong mutateFrom,
 
 void CS::PrefixSearch(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo,
 		void* data) {
+	static bool const slamSeq = Config.GetInt(SLAM_SEQ) & 0x4;
 	CS * cs = (CS*) data;
 
 	RefEntry const * entries = cs->m_RefProvider->GetRefEntry(prefix,
@@ -105,6 +131,9 @@ void CS::PrefixSearch(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo,
 			//float weight = cur->weight / 100.0f;
 			//cs->weightSum += cur->weight;
 			float weight = 1.0f;
+			if (slamSeq) {
+				weight = 1.0f / cs->m_CurrentMutLocs;
+			}
 
 			uloc correction =
 					(cur->reverse) ?
@@ -308,7 +337,7 @@ void CS::Cleanup() {
 
 int CS::RunBatch(ScoreBuffer * sw, AlignmentBuffer * out) {
 	PrefixIterationFn pFunc = &CS::PrefixSearch;
-	if (m_EnableBS)
+	if (m_EnableBS || m_EnableSlamSeq)
 		pFunc = &CS::PrefixMutateSearch;
 
 	int nScoresSum = 0;
@@ -330,12 +359,22 @@ int CS::RunBatch(ScoreBuffer * sw, AlignmentBuffer * out) {
 		static bool const isPaired = Config.GetInt("paired") > 0;
 		if (isPaired && (m_CurrentBatch[i]->ReadId & 1)) {
 			//Second mate
-			mutateFrom = 0x0;
-			mutateTo = 0x3;
+			if (m_EnableSlamSeq) {
+				mutateFrom = 0x3;
+				mutateTo = 0x0;
+			} else {
+				mutateFrom = 0x0;
+				mutateTo = 0x3;
+			}
 		} else {
 			//First mate
-			mutateFrom = 0x2;
-			mutateTo = 0x1;
+			if (m_EnableSlamSeq) {
+				mutateFrom = 0x1;
+				mutateTo = 0x2;
+			} else {
+				mutateFrom = 0x2;
+				mutateTo = 0x1;
+			}
 		}
 
 		m_CurrentReadLength = m_CurrentBatch[i]->length;
@@ -499,8 +538,9 @@ void CS::Init() {
 CS::CS(bool useBuffer) :
 		m_CSThreadID((useBuffer) ? (AtomicInc(&s_ThreadCount) - 1) : -1), m_BatchSize(
 				cBatchSize / Config.GetInt("qry_avg_len")), m_ProcessedReads(0), m_WrittenReads(
-				0), m_DiscardedReads(0), m_EnableBS(false), m_Overflows(0), m_entry(
-				0), m_PrefixBaseSkip(0), m_Fallback(false) // cTableLen <= 0 means always use fallback
+				0), m_DiscardedReads(0), m_EnableBS(false), m_EnableSlamSeq(
+				false), m_Overflows(0), m_entry(0), m_PrefixBaseSkip(0), m_Fallback(
+				false) // cTableLen <= 0 means always use fallback
 {
 
 	SetSearchTableBitLen(
@@ -508,6 +548,7 @@ CS::CS(bool useBuffer) :
 					Config.GetInt("search_table_length") : 16);
 
 	m_EnableBS = (Config.GetInt("bs_mapping", 0, 1) == 1);
+	m_EnableSlamSeq = Config.GetInt(SLAM_SEQ) & 0x4;
 
 	if (m_EnableBS) {
 		m_PrefixBaseSkip =
@@ -559,4 +600,3 @@ CS::~CS() {
 void CS::CheckFallback() {
 
 }
-

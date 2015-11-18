@@ -93,6 +93,7 @@ static const struct option long_options[] =
 		{ "max-read-length",            required_argument, 0, 0 },
 		{ "force-rlength-check",        no_argument,       0, 0 },
 		{ "bin-size",                   required_argument,       0, 0 },
+		{ "slam-seq",                   required_argument,       0, 0 },
 		{ "very-fast",                  no_argument,       0, 0 },
 		{ "fast",                       no_argument,       0, 0 },
 		{ "sensitive",                  no_argument,       0, 0 },

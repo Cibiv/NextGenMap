@@ -179,6 +179,29 @@ void SAMWriter::DoWriteReadGeneric(MappedRead const * const read, int const scor
 	Print("XR:i:%d\t", read->length - read->Alignments[scoreID].QStart - read->Alignments[scoreID].QEnd);
 	Print("MD:Z:%s", read->Alignments[scoreID].pBuffer2);
 
+	//Add TC and RA tag for TC conversions and feedback of all mutations
+	if(read->Alignments[scoreID].ExtendedData != 0) {
+		int * rates = (int *) read->Alignments[scoreID].ExtendedData;
+		char str[5 * 5 * 4];
+		int index = 0;
+		for (int i = 0; i < 5; ++i) {
+			for (int j = 0; j < 5; ++j) {
+				int number = rates[i * 5 + j];
+				//Log.Message("%c -> %c: %d", back[i], back[j], number);
+				index += sprintf(str + index, "%d,", number);
+			}
+		}
+
+		if(read->Scores[scoreID].Location.isReverse()) {
+			Print("\tTC:i:%d", rates[5 * 0 + 2]);
+		} else {
+			Print("\tTC:i:%d", rates[5 * 3 + 1]);
+		}
+
+		Print("\tRA:Z:%.*s", index - 1, str);
+
+	}
+
 	Print("\n");
 
 }
