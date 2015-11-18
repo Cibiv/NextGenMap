@@ -118,7 +118,7 @@ int SWOcl::BatchScore(int const mode, int const batchSize_, char const * const *
 
 	cl_mem bsdirection_gpu = 0;
 	static bool const bsMapping = Config.GetInt("bs_mapping") == 1;
-	if (bsMapping) {
+	if (bsMapping || (slamSeq & 0x2)) {
 		if (host->isGPU()) {
 			bsdirection_gpu = host->allocate(CL_MEM_READ_ONLY, batch_size_scoring * sizeof(cl_char));
 		} else {
@@ -563,4 +563,3 @@ unsigned int SWOcl::computeScoringBatchSize() {
 		return 2048;
 	}
 }
-
