@@ -124,7 +124,7 @@ void ScoreBuffer::DoRun() {
 		//Compute scores
 		//TODO: move to NGMStats
 		ScoreBuffer::scoreCount += iScores;
-		int res = aligner->BatchScore(m_AlignMode, iScores, m_RefBuffer, m_QryBuffer, m_ScoreBuffer, (m_EnableBS || slamSeq) ? m_DirBuffer : 0);
+		int res = aligner->BatchScore(m_AlignMode, iScores, m_RefBuffer, m_QryBuffer, 0, m_ScoreBuffer, (m_EnableBS || slamSeq) ? m_DirBuffer : 0);
 
 		Log.Debug(16, "INFO\tSCORES\t%d scores computed (out of %d)", res, iScores);
 

@@ -30,7 +30,11 @@ long overall = 0;
 
 bool usedPinnedMemory = true;
 
-int SWOcl::BatchScore(int const mode, int const batchSize_, char const * const * const refSeqList_, char const * const * const qrySeqList_, float * const results_, void * extData) {
+int SWOcl::BatchScore(int const mode, int const batchSize_,
+		char const * const * const refSeqList_,
+		char const * const * const qrySeqList_,
+		char const * const * const qalSeqList, float * const results_,
+		void * extData) {
 
 	if (batchSize_ <= 0) {
 		Log.Warning("Score for batchSize <= 0");

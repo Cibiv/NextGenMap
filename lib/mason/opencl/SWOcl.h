@@ -41,9 +41,9 @@ public:
 	virtual int GetScoreBatchSize() const;
 	virtual int GetAlignBatchSize() const = 0;
 	virtual int BatchScore(const int mode, const int batchSize, const char * const * const refSeqList,
-			const char * const * const qrySeqList, float * const results, void * extData);
+			const char * const * const qrySeqList, char const * const * const qalSeqList, float * const results, void * extData);
 	virtual int BatchAlign(const int mode, const int batchSize, const char * const * const refSeqList,
-			const char * const * const qrySeqList, Align * const results, void * extData) = 0;
+			const char * const * const qrySeqList, char const * const * const qalSeqList, Align * const results, void * extData) = 0;
 
 	OclHost * getHost() {
 		return host;
