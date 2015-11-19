@@ -30,7 +30,7 @@ private:
 	int nReads;
 	char const * * qryBuffer;
 	char const * * refBuffer;
-	//char const * * qalBuffer;
+	char const * * qalBuffer;
 	char * m_DirBuffer;
 	int dbLen;
 	Align * alignBuffer;
@@ -103,7 +103,7 @@ public:
 
 						qryBuffer = new char const *[batchSize];
 						refBuffer = new char const *[batchSize];
-						//qalBuffer = new char const *[batchSize];
+						qalBuffer = new char const *[batchSize];
 
 						for (int i = 0; i < batchSize; ++i) {
 							refBuffer[i] = new char[refMaxLen];
@@ -134,7 +134,7 @@ public:
 
 						qryBuffer = new char const *[batchSize];
 						refBuffer = new char const *[batchSize];
-						//qalBuffer = new char const *[batchSize];
+						qalBuffer = new char const *[batchSize];
 
 						for (int i = 0; i < batchSize; ++i) {
 							refBuffer[i] = new char[refMaxLen];
@@ -168,7 +168,7 @@ public:
 						}
 						delete[] qryBuffer;
 						delete[] refBuffer;
-						//delete[] qalBuffer;
+						delete[] qalBuffer;
 						delete[] alignBuffer;
 
 						delete[] reads;

@@ -79,6 +79,7 @@ void AlignmentBuffer::DoRun() {
 			//Initialize
 			if (cur_read->Scores[scoreID].Location.isReverse()) {
 				qryBuffer[i] = cur_read->RevSeq;
+				qalBuffer[i] = cur_read->qlty;
 
 				if (cur_read->Paired != 0) {
 					m_DirBuffer[i] = !(cur_read->ReadId & 1);
@@ -88,6 +89,7 @@ void AlignmentBuffer::DoRun() {
 
 			} else {
 				qryBuffer[i] = cur_read->Seq;
+				qalBuffer[i] = cur_read->qlty;
 				if (cur_read->Paired != 0) {
 					m_DirBuffer[i] = cur_read->ReadId & 1; //0 if first pair
 				} else {
@@ -109,7 +111,7 @@ void AlignmentBuffer::DoRun() {
 		}
 
 		//start alignment
-		int aligned = aligner->BatchAlign(alignmode | (std::max(outputformat, 1) << 8), count, refBuffer, qryBuffer, alignBuffer,
+		int aligned = aligner->BatchAlign(alignmode | (std::max(outputformat, 1) << 8), count, refBuffer, qryBuffer, qalBuffer, alignBuffer,
 				(m_EnableBS || slamSeq) ? m_DirBuffer : 0);
 
 		Log.Debug(32, "INFO\tALGN\t%d alignments computed (out of %d)", aligned, count);

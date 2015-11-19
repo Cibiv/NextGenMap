@@ -85,7 +85,10 @@ void SWOclCigar::runSwBatchKernel(cl_kernel swScoreAlign, const int batchSize, c
 	host->waitForDevice();
 }
 
-int SWOclCigar::BatchAlign(int const mode, int const batchSize_, char const * const * const refSeqList_, char const * const * const qrySeqList_, Align * const results, void * extData) {
+int SWOclCigar::BatchAlign(int const mode, int const batchSize_,
+	  char const * const * const refSeqList_,
+		char const * const * const qrySeqList_,
+		char const * const * const qalSeqList, Align * const results, void * extData) {
 	if (batchSize_ <= 0) {
 		Log.Warning("Align for batchSize <= 0");
 		return 0;
@@ -277,7 +280,7 @@ int SWOclCigar::BatchAlign(int const mode, int const batchSize_, char const * co
 		}
 
 		if (!computeCigarMD(results[i], gpu_return_values[offset + alignments_per_thread * 3 + k], gpuCigar,
-				refSeqList[i] + gpu_return_values[offset + k], qrySeqList[i], bsFrom, bsTo)) {
+				refSeqList[i] + gpu_return_values[offset + k], qrySeqList[i], qalSeqList[i], bsFrom, bsTo)) {
 			results[i].Score = -1.0f;
 		}
 		results[i].PositionOffset = gpu_return_values[offset + k];
@@ -382,7 +385,10 @@ int trans[256] = { 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
 
 char back[baseNumber] = { 'A', 'C', 'G', 'T', 'N' };
 
-bool SWOclCigar::computeCigarMD(Align & result, int const gpuCigarOffset, short const * const gpuCigar, char const * const refSeq, char const * const qrySeq, char const bsFrom, char const bsTo) {
+bool SWOclCigar::computeCigarMD(Align & result, int const gpuCigarOffset,
+	  short const * const gpuCigar, char const * const refSeq,
+		char const * const qrySeq, char const * const qalSeq, char const bsFrom,
+		char const bsTo) {
 
 	static bool const bsMapping = Config.GetInt("bs_mapping") == 1;
 	int cigar_offset = 0;
