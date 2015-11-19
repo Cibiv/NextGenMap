@@ -104,9 +104,9 @@ public:
 
 		m_DirBuffer = new char[swBatchSize];
 
-		m_EnableBS = false;
+		//m_EnableBS = false;
 		//	if (Config.Exists("bs_mapping"))
-		m_EnableBS = (Config.GetInt("bs_mapping", 0, 1) == 1);
+		//m_EnableBS = (Config.GetInt("bs_mapping", 0, 1) == 1);
 
 		qryMaxLen = Config.GetInt("qry_max_len");
 		refMaxLen = ((qryMaxLen + Config.GetInt("corridor")) | 1) + 1;
