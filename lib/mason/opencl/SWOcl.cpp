@@ -135,7 +135,7 @@ int SWOcl::BatchScore(int const mode, int const batchSize_, char const * const *
 	runSwScoreKernel(scoreKernel, batchSize, qrySeqList, refSeqList, (char *) extData, bsdirection_gpu, results_gpu, results);
 
 	clReleaseMemObject(results_gpu);
-	if (bsMapping) {
+	if (bsMapping || (slamSeq & 0x2)) {
 		clReleaseMemObject(bsdirection_gpu);
 	}
 	seq_count += batchSize;
@@ -158,7 +158,8 @@ int SWOcl::BatchScore(int const mode, int const batchSize_, char const * const *
 }
 
 SWOcl::SWOcl(char const * const oclSwScoreSourceCode, char const * const additional_defines, OclHost * phost) :
-		host(phost) {
+		host(phost), bsMapping(Config.GetInt("bs_mapping") == 1), slamSeq(
+		Config.GetInt(SLAM_SEQ)) {
 
 //	Log.Message("HHHHHHHHHHHHHAAAALLLOOO");
 //	if (!host->checkLocalMemory(46000)) {
@@ -212,8 +213,24 @@ SWOcl::SWOcl(char const * const oclSwScoreSourceCode, char const * const additio
 	} else {
 		buildCmd << "-D __CPU__";
 	}
+	/* old version
 	if (bsMapping) {
 		buildCmd << "-D __BS__";
+	} */
+	if (bsMapping) {
+		buildCmd << " -D __ALT_SCORING__";
+		buildCmd << " -D matchALT=" << Config.GetFloat(MATCH_BONUS_TT)
+				<< " -D mismatchALT=" << Config.GetFloat(MATCH_BONUS_TC);
+		buildCmd << " -D scoresFWD=scoresBsFWD -D scoresREV=scoresBsREV";
+	} else if ((slamSeq & 0x2)) {
+		buildCmd << " -D __ALT_SCORING__";
+		buildCmd << " -D matchALT=" << Config.GetFloat(MATCH_BONUS_TT)
+				<< " -D mismatchALT="
+				<< Config.GetFloat(MATCH_BONUS_TC) * -1.0f;
+		buildCmd << " -D scoresFWD=scoresSlamSeqFWD -D scoresREV=scoresSlamSeqREV";
+	} else {
+		buildCmd << " -D matchALT=0 -D mismatchALT=0";
+		buildCmd << " -D scoresFWD=scores -D scoresREV=scores";
 	}
 
 ////#pragma omp critical

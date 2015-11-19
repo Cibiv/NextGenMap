@@ -108,3 +108,40 @@ __cl_constant float scoresAG[7][7] = { {matchBS,  mismatch, mismatchBS, mismatch
  	 	 	 	 	 	 	 	 	   {mismatch, mismatch, mismatch,   mismatch, mismatch, mismatch, 0},
  	 	 	 	 	 	 	 	 	   {0,        0,        0,          0,        0,        0       , 0}       ,
  	 	 	 	 	 	 	 	 	   {0,        0,        0,          0,        0,        0       , 0} };
+//Ref ->
+  //A			C		  G         T         X         N         \0
+__cl_constant float scoresBsFWD[7][7] ={ {match,    mismatch,   mismatch, mismatch, mismatch, mismatch, 0},
+/*Read*/							   {mismatch, match,      mismatch, mismatch, mismatch, mismatch, 0},
+/*|*/								   {mismatch, mismatch,   match,    mismatch, mismatch, mismatch, 0},
+/*v*/								   {mismatch, mismatchALT, mismatch, matchALT,  mismatch, mismatch, 0},
+	 	   	   	   	   	   	   	   	   {mismatch, mismatch,   mismatch, mismatch, mismatch, mismatch, 0},
+									   {0,        0,          0,        0,        mismatch, mismatch, mismatch},
+									   {0,        0,          0,        0,        0,        0       , 0} };
+
+
+__cl_constant float scoresBsREV[7][7] = { {matchALT,  mismatch, mismatchALT, mismatch, mismatch, mismatch, 0},
+/*Read*/							   {mismatch, match,    mismatch,   mismatch, mismatch, mismatch, 0},
+/*|*/								   {mismatch, mismatch, match,      mismatch, mismatch, mismatch, 0},
+/*v*/								   {mismatch, mismatch, mismatch,   match,    mismatch, mismatch, 0},
+	 	   	   	   	   	   	   	   	   {mismatch, mismatch, mismatch,   mismatch, mismatch, mismatch, 0},
+									   {0,        0,        0,          0,        0,        0       , 0}       ,
+									   {0,        0,        0,          0,        0,        0       , 0} };
+
+//Ref ->
+//A			C		  G         T         X         N         \0
+__cl_constant float scoresSlamSeqFWD[7][7] ={ {match,    mismatch,   mismatch, mismatch, mismatch, mismatch, 0},
+/*Read*/							   {mismatch, match,      mismatch, mismatchALT, mismatch, mismatch, 0},
+/*|*/								   {mismatch, mismatch,   match,    mismatch, mismatch, mismatch, 0},
+/*v*/								   {mismatch, mismatch, mismatch, matchALT,  mismatch, mismatch, 0},
+	 	   	   	   	   	   	   	   	   {mismatch, mismatch,   mismatch, mismatch, mismatch, mismatch, 0},
+									   {0,        0,          0,        0,        mismatch, mismatch, mismatch},
+									   {0,        0,          0,        0,        0,        0       , 0} };
+
+
+__cl_constant float scoresSlamSeqREV[7][7] = { {matchALT,  mismatch, mismatch, mismatch, mismatch, mismatch, 0},
+/*Read*/							   {mismatch, match,    mismatch,   mismatch, mismatch, mismatch, 0},
+/*|*/								   {mismatchALT, mismatch, match,      mismatch, mismatch, mismatch, 0},
+/*v*/								   {mismatch, mismatch, mismatch,   match,    mismatch, mismatch, 0},
+	 	   	   	   	   	   	   	   	   {mismatch, mismatch, mismatch,   mismatch, mismatch, mismatch, 0},
+									   {0,        0,        0,          0,        0,        0       , 0}       ,
+									   {0,        0,        0,          0,        0,        0       , 0} };

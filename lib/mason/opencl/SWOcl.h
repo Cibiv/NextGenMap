@@ -65,6 +65,9 @@ protected:
 	int matrix_length;
 	int config_ref_size;
 
+	bool const bsMapping;
+	int const slamSeq;
+
 	OclHost * host;
 	//static int programUserCount;
 //	static cl_program clProgram;

@@ -5,9 +5,9 @@ set( NGM_VERSION_MAJOR 0 )
 set( NGM_VERSION_MINOR 4 )
 IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Building in debug mode!")
-    set( NGM_VERSION_BUILD 13-debug )
+    set( NGM_VERSION_BUILD 13-slambr-debug )
 else()
-  set( NGM_VERSION_BUILD 13 )
+  set( NGM_VERSION_BUILD 13-slambr )
 ENDIF()
 
 
@@ -17,7 +17,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin/ngm-${NGM_VERSION_MAJOR}.${
 file(MAKE_DIRECTORY ${EXECUTABLE_OUTPUT_PATH})
 
 #add_definitions(-D INSTANCE_COUNTING)
-#VERBOSE OUTPUT 
+#VERBOSE OUTPUT
 #add_definitions(-D VERBOSE)
 #DEBUG OUTPUT FOR CS (FILE: cs-results.txt)
 #add_definitions(-D _DEBUGCS)
@@ -49,7 +49,7 @@ IF(NOT APPLE)
 	add_subdirectory(opencl-sdk)
 endif()
 
-IF(APPLE) 
+IF(APPLE)
   set(GDB "ggdb")
   set(OPENCL_LIBRARIES "-framework OpenCL")
 ELSE()
@@ -79,9 +79,9 @@ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/ngm" "#!/bin/bash
 
 pushd . > /dev/null
 SCRIPT_PATH=\"\${BASH_SOURCE[0]}\";
-  while([ -h \"\${SCRIPT_PATH}\" ]) do 
+  while([ -h \"\${SCRIPT_PATH}\" ]) do
     cd \"`dirname \"\${SCRIPT_PATH}\"`\"
-    SCRIPT_PATH=\"$(readlink \"`basename \"\${SCRIPT_PATH}\"`\")\"; 
+    SCRIPT_PATH=\"$(readlink \"`basename \"\${SCRIPT_PATH}\"`\")\";
   done
 cd \"`dirname \"\${SCRIPT_PATH}\"`\" > /dev/null
 SCRIPT_PATH=\"`pwd`\";
@@ -97,9 +97,9 @@ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/ngm-log" "#!/bin/bash
 
 pushd . > /dev/null
 SCRIPT_PATH=\"\${BASH_SOURCE[0]}\";
-  while([ -h \"\${SCRIPT_PATH}\" ]) do 
+  while([ -h \"\${SCRIPT_PATH}\" ]) do
     cd \"`dirname \"\${SCRIPT_PATH}\"`\"
-    SCRIPT_PATH=\"$(readlink \"`basename \"\${SCRIPT_PATH}\"`\")\"; 
+    SCRIPT_PATH=\"$(readlink \"`basename \"\${SCRIPT_PATH}\"`\")\";
   done
 cd \"`dirname \"\${SCRIPT_PATH}\"`\" > /dev/null
 SCRIPT_PATH=\"`pwd`\";
@@ -115,9 +115,9 @@ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/ngm-debug" "#!/bin/bash
 
 pushd . > /dev/null
 SCRIPT_PATH=\"\${BASH_SOURCE[0]}\";
-  while([ -h \"\${SCRIPT_PATH}\" ]) do 
+  while([ -h \"\${SCRIPT_PATH}\" ]) do
     cd \"`dirname \"\${SCRIPT_PATH}\"`\"
-    SCRIPT_PATH=\"$(readlink \"`basename \"\${SCRIPT_PATH}\"`\")\"; 
+    SCRIPT_PATH=\"$(readlink \"`basename \"\${SCRIPT_PATH}\"`\")\";
   done
 cd \"`dirname \"\${SCRIPT_PATH}\"`\" > /dev/null
 SCRIPT_PATH=\"`pwd`\";
@@ -132,5 +132,3 @@ OPENCL_VENDOR_PATH=\"$SCRIPT_PATH/opencl/vendor\" LD_LIBRARY_PATH=\"$SCRIPT_PATH
 file(COPY "${CMAKE_CURRENT_BINARY_DIR}/ngm-debug" DESTINATION "${EXECUTABLE_OUTPUT_PATH}" FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ NO_SOURCE_PERMISSIONS)
 file(COPY "${CMAKE_CURRENT_BINARY_DIR}/ngm" DESTINATION "${EXECUTABLE_OUTPUT_PATH}" FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ NO_SOURCE_PERMISSIONS)
 file(COPY "${CMAKE_CURRENT_BINARY_DIR}/ngm-log" DESTINATION "${EXECUTABLE_OUTPUT_PATH}" FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ NO_SOURCE_PERMISSIONS)
-
-

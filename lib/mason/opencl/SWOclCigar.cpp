@@ -219,7 +219,7 @@ int SWOclCigar::BatchAlign(int const mode, int const batchSize_, char const * co
 	}
 	cl_mem bsdirection_gpu = 0;
 	static bool const bsMapping = Config.GetInt("bs_mapping") == 1;
-	if (bsMapping) {
+	if (bsMapping || (slamSeq & 0x2)) {
 		if (host->isGPU()) {
 			bsdirection_gpu = host->allocate(CL_MEM_READ_ONLY, batch_size_align * sizeof(cl_char));
 		} else {
@@ -255,12 +255,27 @@ int SWOclCigar::BatchAlign(int const mode, int const batchSize_, char const * co
 		int offset = (i / alignments_per_thread) * result_number * alignments_per_thread;
 		int k = (i) % alignments_per_thread;
 
-		char bsFrom = 'T';
-		char bsTo = 'C';
-		if (bsMapping && ((char *) extData)[i] == 1) {
-			bsFrom = 'A';
-			bsTo = 'G';
+		char bsFrom = '0';
+		char bsTo = '0';
+		if (bsMapping) {
+			if (((char *) extData)[i] == 1) {
+				bsFrom = 'A';
+				bsTo = 'G';
+			} else {
+				bsFrom = 'T';
+				bsTo = 'C';
+			}
 		}
+		if (slamSeq) {
+			if (((char *) extData)[i] == 1) {
+				bsFrom = 'G';
+				bsTo = 'A';
+			} else {
+				bsFrom = 'C';
+				bsTo = 'T';
+			}
+		}
+
 		if (!computeCigarMD(results[i], gpu_return_values[offset + alignments_per_thread * 3 + k], gpuCigar,
 				refSeqList[i] + gpu_return_values[offset + k], qrySeqList[i], bsFrom, bsTo)) {
 			results[i].Score = -1.0f;
@@ -286,7 +301,7 @@ int SWOclCigar::BatchAlign(int const mode, int const batchSize_, char const * co
 		Log.Verbose("Releasing scaff.");
 
 		clReleaseMemObject(c_scaff_gpu);
-		if (bsMapping) {
+		if (bsMapping || (slamSeq & 0x2)) {
 			clReleaseMemObject(bsdirection_gpu);
 		}
 	}
@@ -361,6 +376,13 @@ bool SWOclCigar::computeCigarMD(Align & result, int const gpuCigarOffset, short 
 	result.QStart = 0;
 	result.QEnd = 0;
 
+	int * rates = 0;
+	if (slamSeq) {
+		rates = new int[baseNumber * baseNumber];
+		result.ExtendedData = (void *) rates;
+		memset(rates, 0, baseNumber * baseNumber * sizeof(int));
+	}
+
 	if ((gpuCigar[gpuCigarOffset] >> 4) > 0) {
 		if (Config.GetInt("hard_clip") == 1) { //soft clipping
 			cigar_offset += printCigarElement('H', gpuCigar[gpuCigarOffset] >> 4, result.pCigar + cigar_offset);
@@ -392,15 +414,23 @@ bool SWOclCigar::computeCigarMD(Align & result, int const gpuCigarOffset, short 
 		total += length;
 		switch (op) {
 			case CIGAR_X:
+				if (slamSeq) {
+					for (int k = 0; k < length; ++k) {
+						// Log.Message("%c - %c (%d) -> %c (%d)", qalSeq[read_index], refSeq[ref_index], trans[refSeq[ref_index]], qrySeq[read_index], trans[qrySeq[read_index]]);
+						rates[baseNumber * trans[refSeq[ref_index + k]]
+								+ trans[qrySeq[read_index + k]]]++;
+					}
+				}
+
 				cigar_m_length += length;
-				if (!bsMapping)
+				if (!bsMapping && !slamSeq)
 					mismatch += length;
 
 				//Produces: 	[0-9]+(([A-Z]+|\^[A-Z]+)[0-9]+)*
 				//instead of: 	[0-9]+(([A-Z]|\^[A-Z]+)[0-9]+)*
 				md_offset += sprintf(result.pMD + md_offset, "%d", md_eq_length);
 				for (int k = 0; k < length; ++k) {
-					if (bsMapping) {
+					if (bsMapping || slamSeq) {
 						if (qrySeq[read_index] == bsFrom && refSeq[ref_index] == bsTo) {
 							match += 1;
 						} else {
@@ -414,6 +444,12 @@ bool SWOclCigar::computeCigarMD(Align & result, int const gpuCigarOffset, short 
 
 			break;
 			case CIGAR_EQ:
+				if (slamSeq) {
+					for (int k = 0; k < length; ++k) {
+						rates[baseNumber * trans[refSeq[ref_index + k]]
+								+ trans[qrySeq[read_index + k]]]++;
+					}
+				}
 				match += length;
 				cigar_m_length += length;
 				md_eq_length += length;
@@ -559,4 +595,3 @@ int SWOclCigar::computeAlignmentBatchSize() {
 		return 2048;
 	}
 }
-
