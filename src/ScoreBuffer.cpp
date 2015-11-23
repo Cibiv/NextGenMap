@@ -34,7 +34,7 @@ bool sortLocationScore(LocationScore a, LocationScore b) {
 int ScoreBuffer::computeMQ(float bestScore, float secondBestScore) {
 	int mq = 0;
 	if (bestScore > 0 && secondBestScore >= 0) {
-		ceil(MAX_MQ * (bestScore - secondBestScore) / bestScore);
+		mq = ceil(MAX_MQ * (bestScore - secondBestScore) / bestScore);
 	}
 	return mq;
 }
