@@ -64,6 +64,8 @@ void CS::PrefixMutateSearch(ulong prefix, uloc pos, ulong mutateFrom,
 			++mutationLocs;
 	}
 
+	Log.Verbose("Qry Seq %i - Prefix 0x%x -> %d k-mers", cs->m_CurrentSeq, prefix, mutationLocs + 1);
+
 	if (slamSeq) {
 		CS * cs = (CS*) data;
 		cs->m_CurrentMutLocs = 1;
@@ -149,6 +151,7 @@ void CS::PrefixSearch(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo,
 				uloc loc = cur->getRealLocation(cur->ref[i]);
 				cs->AddLocationStd(GetBin(loc - correction), cur->reverse,
 						weight);
+				Log.Verbose("Qry Seq %i - Prefix 0x%x pos %llu weight %f", cs->m_CurrentSeq, prefix, GetBin(loc - correction), weight);
 			}
 
 			cur++;

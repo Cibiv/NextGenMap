@@ -80,8 +80,8 @@ __cl_constant int trans[256] =
 				4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 };
 
 
-									//Ref ->
-									//A			C		  G         T         X         N         \0
+//Ref ->
+//A			C		  G         T         X         N         \0
 __cl_constant float scores[7][7] = { {match,    mismatch, mismatch, mismatch, mismatch, mismatch, 0},
 /*Read*/							 {mismatch, match,    mismatch, mismatch, mismatch, mismatch, 0},
 /*|*/								 {mismatch, mismatch, match,    mismatch, mismatch, mismatch, 0},
@@ -90,8 +90,8 @@ __cl_constant float scores[7][7] = { {match,    mismatch, mismatch, mismatch, mi
 									 {0,        0,        0,        0,        mismatch, mismatch, mismatch},
 									 {0,        0,        0,        0,        0,        0       , 0} };
 
-									   //Ref ->
-									   //A			C		  G         T         X         N         \0
+//Ref ->
+//A			C		  G         T         X         N         \0
 __cl_constant float scoresTC[7][7] = { {match,    mismatch,   mismatch, mismatch, mismatch, mismatch, 0},
 /*Read*/							   {mismatch, match,      mismatch, mismatch, mismatch, mismatch, 0},
 /*|*/								   {mismatch, mismatch,   match,    mismatch, mismatch, mismatch, 0},
@@ -108,8 +108,8 @@ __cl_constant float scoresAG[7][7] = { {matchBS,  mismatch, mismatchBS, mismatch
  	 	 	 	 	 	 	 	 	   {mismatch, mismatch, mismatch,   mismatch, mismatch, mismatch, 0},
  	 	 	 	 	 	 	 	 	   {0,        0,        0,          0,        0,        0       , 0}       ,
  	 	 	 	 	 	 	 	 	   {0,        0,        0,          0,        0,        0       , 0} };
-//Ref ->
-  //A			C		  G         T         X         N         \0
+	//Ref ->
+	//A			C		  G         T         X         N         \0
 __cl_constant float scoresBsFWD[7][7] ={ {match,    mismatch,   mismatch, mismatch, mismatch, mismatch, 0},
 /*Read*/							   {mismatch, match,      mismatch, mismatch, mismatch, mismatch, 0},
 /*|*/								   {mismatch, mismatch,   match,    mismatch, mismatch, mismatch, 0},

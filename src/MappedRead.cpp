@@ -94,6 +94,9 @@ MappedRead::~MappedRead() {
 			if (Alignments[i].pBuffer2 != 0)
 				delete[] Alignments[i].pBuffer2;
 			Alignments[i].pBuffer2 = 0;
+			if(Alignments[i].ExtendedData != 0)
+				delete[] (int *)Alignments[i].ExtendedData;
+			Alignments[i].ExtendedData = 0;
 		}
 		delete[] Alignments;
 		Alignments = 0;

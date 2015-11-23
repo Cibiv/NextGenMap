@@ -57,7 +57,12 @@ private:
 protected:
 
 	/*Number of threads executed by each multi processor*/
+	#ifdef __APPLE__
+	static unsigned int const threads_per_block = 1;
+	#else
 	static unsigned int const threads_per_block = 256;
+	#endif
+	
 	unsigned int block_multiplier;
 	unsigned int step_count;
 

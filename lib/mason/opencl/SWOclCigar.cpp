@@ -47,7 +47,13 @@ SWOclCigar::~SWOclCigar() {
 	clReleaseKernel(swAlignScoreKernelGlobal);
 }
 
-void SWOclCigar::runSwBatchKernel(cl_kernel swScoreAlign, const int batchSize, const char * const * const qrySeqList, const char * const * const refSeqList, char * bsDirection, cl_mem & results_gpu, cl_mem & alignments, short * const result, short * calignments, cl_mem & matrix_gpu, cl_mem & bsdirection_gpu) {
+void SWOclCigar::runSwBatchKernel(cl_kernel swScoreAlign, const int batchSize,
+																	const char * const * const qrySeqList,
+																	const char * const * const refSeqList,
+																	char * bsDirection, cl_mem & results_gpu,
+																	cl_mem & alignments, short * const result,
+																	short * calignments, cl_mem & matrix_gpu,
+																	cl_mem & bsdirection_gpu) {
 	const size_t cnDim = batch_size_align / alignments_per_thread;
 	const size_t cBlockSize = threads_per_block;
 
@@ -86,7 +92,7 @@ void SWOclCigar::runSwBatchKernel(cl_kernel swScoreAlign, const int batchSize, c
 }
 
 int SWOclCigar::BatchAlign(int const mode, int const batchSize_,
-	  char const * const * const refSeqList_,
+		char const * const * const refSeqList_,
 		char const * const * const qrySeqList_,
 		char const * const * const qalSeqList, Align * const results, void * extData) {
 	if (batchSize_ <= 0) {

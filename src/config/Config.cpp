@@ -443,6 +443,8 @@ _Config::_Config(int argc, char * argv[], bool praseArgs) {
 				Default(GAP_REF_PENALTY, 20);
 				Default(GAP_EXTEND_PENALTY, 5);
 			}
+			Default(MATCH_BONUS_TT, 10);
+			Default(MATCH_BONUS_TC, 2);
 		} else {
 			Log.Message("Using bs-mapping scoring scheme");
 			if(GetInt("affine")) {
@@ -463,9 +465,9 @@ _Config::_Config(int argc, char * argv[], bool praseArgs) {
 			Default(GAP_READ_PENALTY, 10);
 			Default(GAP_REF_PENALTY, 10);
 			Default(GAP_EXTEND_PENALTY, 2);
+			Default(MATCH_BONUS_TT, 4);
+			Default(MATCH_BONUS_TC, 4);
 		}
-		Default(MATCH_BONUS_TT, 4);
-		Default(MATCH_BONUS_TC, 4);
 
 		//Silent
 		Default("dualstrand", 1);
@@ -507,7 +509,9 @@ _Config::_Config(int argc, char * argv[], bool praseArgs) {
 
 		Default(MAX_READ_LENGTH, 0);
 
-		Default(BIN_SIZE, 3);
+		Default(BIN_SIZE, 2);
+
+		Default(TRIM5, 0);
 
 		if(Exists(ARGOS)) {
 			Default("sensitivity", 0.0f);
@@ -524,7 +528,7 @@ _Config::_Config(int argc, char * argv[], bool praseArgs) {
 #endif
 
 #ifdef DEBUGLOG
-//	Default("log_lvl", "16383");
+	//Default("log_lvl", "16383");
 	Default("log_lvl", "255");
 	//Default(LOG_LVL, "0");
 #endif

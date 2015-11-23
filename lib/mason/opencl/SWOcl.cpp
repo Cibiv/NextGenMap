@@ -205,17 +205,21 @@ SWOcl::SWOcl(char const * const oclSwScoreSourceCode, char const * const additio
 
 	stringstream buildCmd;
 	static bool const bsMapping = Config.GetInt("bs_mapping") == 1;
-	buildCmd << "-D MATRIX_LENGTH=" << (matrix_length * threads_per_block) << " -D interleave_number=" << "256" << " -D threads_per_block="
-			<< threads_per_block << " -D match=" << Config.GetFloat(MATCH_BONUS) << " -D mismatch=" << Config.GetFloat(MISMATCH_PENALTY) * -1.0f
-			<< " -D gap_read=" << Config.GetFloat(GAP_READ_PENALTY) * -1.0f << " -D gap_ref=" << Config.GetFloat(GAP_REF_PENALTY) * -1.0f << " -D matchBS="
-			<< Config.GetFloat(MATCH_BONUS_TT) << " -D mismatchBS=" << Config.GetFloat(MATCH_BONUS_TC) << " -D read_length="
-			<< Config.GetInt("qry_max_len") << " -D ref_length=" << config_ref_size << " -D corridor_length="
-			<< (Config.GetInt("corridor") + 1) << " -D alignment_length=" << alignment_length;
+	buildCmd << "-D MATRIX_LENGTH=" << (matrix_length * threads_per_block)
+			<< " -D interleave_number=" << "256" << " -D threads_per_block="
+			<< threads_per_block << " -D match=" << Config.GetFloat(MATCH_BONUS)
+			<< " -D mismatch=" << Config.GetFloat(MISMATCH_PENALTY) * -1.0f
+			<< " -D gap_read=" << Config.GetFloat(GAP_READ_PENALTY) * -1.0f
+			<< " -D gap_ref=" << Config.GetFloat(GAP_REF_PENALTY) * -1.0f
+			<< " -D read_length=" << Config.GetInt("qry_max_len")
+			<< " -D ref_length=" << config_ref_size << " -D corridor_length="
+			<< (Config.GetInt("corridor") + 1) << " -D alignment_length="
+			<< alignment_length;
 	buildCmd << additional_defines;
 	if (host->isGPU()) {
-		buildCmd << "-D __GPU__";
+		buildCmd << " -D __GPU__";
 	} else {
-		buildCmd << "-D __CPU__";
+		buildCmd << " -D __CPU__";
 	}
 	/* old version
 	if (bsMapping) {
