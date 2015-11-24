@@ -44,13 +44,10 @@ public:
 
 		if (bufferPosition > BUFFER_LIMIT || last) {
 #ifdef __APPLE__
-			if (fwrite(writeBuffer, sizeof(char), bufferPosition, m_Output) < 0) {
+			fwrite(writeBuffer, sizeof(char), bufferPosition, m_Output);
 #else
-			if (fwrite_unlocked(writeBuffer, sizeof(char), bufferPosition, m_Output) < 0) {
+			fwrite_unlocked(writeBuffer, sizeof(char), bufferPosition, m_Output);
 #endif
-				Log.Error("Writing");
-				Fatal();
-			}
 			bufferPosition = 0;
 
 		}
