@@ -7,7 +7,7 @@
 
 #include "EndToEndAffine.h"
 
-int EndToEndAffine::BatchScore(int const mode, int const batchSize, char const * const * const refSeqList, char const * const * const qrySeqList, float * const results, void * extData) {
+int EndToEndAffine::BatchScore(int const mode, int const batchSize, char const * const * const refSeqList, char const * const * const qrySeqList, char const * const * const qalSeqList, float * const results, void * extData) {
 	for(int i = 0; i < batchSize; ++i) {
 		switch(m_AlignMode) {
 			case 0:
@@ -27,7 +27,7 @@ int EndToEndAffine::BatchScore(int const mode, int const batchSize, char const *
 	return batchSize;
 }
 
-int EndToEndAffine::BatchAlign(int const mode, int const batchSize, char const * const * const refSeqList, char const * const * const qrySeqList, Align * const results, void * extData) {
+int EndToEndAffine::BatchAlign(int const mode, int const batchSize, char const * const * const refSeqList, char const * const * const qrySeqList, char const * const * const qalSeqList, Align * const results, void * extData) {
 	for(int i = 0; i < batchSize; ++i) {
 
 		TGaps gapsText;

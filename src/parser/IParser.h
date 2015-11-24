@@ -15,6 +15,8 @@
 #include "../SAMRecord.h"
 #include <string.h>
 
+#include "IConfig.h"
+
 #include <iostream>
 
 KSEQ_INIT(gzFile, gzread)
@@ -25,7 +27,7 @@ public:
 
 	static size_t const MAX_READNAME_LENGTH = 100;
 
-	IParser(int const qrymaxlen) : qryMaxLen(qrymaxlen) {
+	IParser(int const qrymaxlen) : qryMaxLen(qrymaxlen), trim5p(Config.GetInt(TRIM5)), trim3p(0) {
 
 	}
 
@@ -48,6 +50,8 @@ public:
 protected:
 
 	int const qryMaxLen;
+	int const trim5p;
+	int const trim3p;
 
 	virtual int doParseRead(MappedRead * pRead) = 0;
 	virtual int doParseRead(SAMRecord * pRead) = 0;
@@ -63,20 +67,21 @@ protected:
 
 				//Sequence
 				memset(read->Seq, '\0', qryMaxLen);
-				if (kseq->seq.l != 0) {
-					read->length = std::min(kseq->seq.l,
+				if (kseq->seq.l != 0 && kseq->seq.l > trim5p) {
+					read->length = std::min(kseq->seq.l - trim5p,
 							(size_t) qryMaxLen - 1);
 					int nCount = 0;
-					for (int i = 0; i < read->length; ++i) {
+					for (int i = trim5p; i < read->length + trim5p; ++i) {
 						char c = toupper(kseq->seq.s[i]);
 						if (c == 'A' || c == 'T' || c == 'C' || c == 'G') {
-							read->Seq[i] = c;
+							read->Seq[i - trim5p] = c;
 						} else {
-							read->Seq[i] = 'N';
+							read->Seq[i - trim5p] = 'N';
 							nCount += 1;
 						}
 
 					}
+					read->Seq[read->length] = '\0';
 				} else {
 					read->length = 1;
 					read->Seq[0] = 'N';
@@ -86,8 +91,8 @@ protected:
 				}
 
 				//Quality
-				if (kseq->qual.l > 0) {
-					memcpy(read->qlty, kseq->qual.s, read->length);
+				if (kseq->qual.l > 0 && kseq->qual.l > trim5p) {
+					memcpy(read->qlty, kseq->qual.s + trim5p, read->length);
 					read->qlty[read->length] = '\0';
 				} else {
 					read->qlty[0] = '*';

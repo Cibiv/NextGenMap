@@ -44,12 +44,15 @@ protected:
 	std::vector<MappedRead*> m_CurrentBatch;
 	int m_CurrentSeq;
 	int m_CurrentReadLength;
+	//SlamSeq. Number of Ts in k-mer
+	int m_CurrentMutLocs;
 	int m_ProcessedReads;
 	int m_WrittenReads;
 	int m_DiscardedReads;
 	//	volatile int m_Candidates;
 	int m_Mode;
 	bool m_EnableBS;
+	int m_EnableSlamSeq;
 	int m_Overflows;
 	//float weightSum;
 	const IRefProvider* m_RefProvider;
@@ -66,6 +69,7 @@ protected:
 	static void PrefixSearch(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo, void* data);
 
 	static void PrefixMutateSearchEx(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo, void* data, int mpos = 0);
+	static void PrefixMutateSearchSlamSeq(ulong prefix, uloc pos, ulong mutateFrom,	ulong mutateTo, void* data, int mpos = 0);
 	virtual int CollectResultsStd(MappedRead* read);
 	int CollectResultsFallback(MappedRead* read);
 	void FilterScore(LocationScore* score);

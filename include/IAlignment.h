@@ -42,12 +42,14 @@ public:
 
 	virtual int BatchScore(int const mode, int const batchSize,
 			char const * const * const refSeqList,
-			char const * const * const qrySeqList, float * const results,
+			char const * const * const qrySeqList,
+			char const * const * const qalSeqList, float * const results,
 			void * extData) = 0;
 
 	virtual int BatchAlign(int const mode, int const batchSize,
 			char const * const * const refSeqList,
-			char const * const * const qrySeqList, Align * const results,
+			char const * const * const qrySeqList,
+			char const * const * const qalSeqList, Align * const results,
 			void * extData) = 0;
 };
 

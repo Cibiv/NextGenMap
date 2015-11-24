@@ -21,7 +21,6 @@ private:
 
 	int const outputformat;
 	int const alignmode;
-	bool m_EnableBS;
 	int const batchSize;
 	int const corridor;
 	uloc const refMaxLen;
@@ -31,6 +30,7 @@ private:
 	int nReads;
 	char const * * qryBuffer;
 	char const * * refBuffer;
+	char const * * qalBuffer;
 	char * m_DirBuffer;
 	int dbLen;
 	Align * alignBuffer;
@@ -50,6 +50,8 @@ private:
 	IAlignment * aligner;
 
 	bool const argos;
+	bool const m_EnableBS;
+	int const slamSeq;
 
 	void debugAlgnFinished(MappedRead * read);
 
@@ -64,15 +66,12 @@ public:
 					corridor(Config.GetInt("corridor")),
 					refMaxLen((Config.GetInt("qry_max_len") + corridor) | 1 + 1),
 					min_mq(Config.GetInt(MIN_MQ)),
-					aligner(mAligner), argos(Config.Exists(ARGOS)) {
+					aligner(mAligner), argos(Config.Exists(ARGOS)), m_EnableBS(Config.GetInt("bs_mapping", 0, 1) == 1), slamSeq(Config.GetInt(SLAM_SEQ)) {
 						pairInsertSum = 0;
 						pairInsertCount = 0;
 						brokenPairs = 0;
 						m_Writer = 0;
 						nReads = 0;
-
-						m_EnableBS = false;
-						m_EnableBS = (Config.GetInt("bs_mapping", 0, 1) == 1);
 
 						int const outputformat = NGM.GetOutputFormat();
 
@@ -104,6 +103,7 @@ public:
 
 						qryBuffer = new char const *[batchSize];
 						refBuffer = new char const *[batchSize];
+						qalBuffer = new char const *[batchSize];
 
 						for (int i = 0; i < batchSize; ++i) {
 							refBuffer[i] = new char[refMaxLen];
@@ -134,6 +134,7 @@ public:
 
 						qryBuffer = new char const *[batchSize];
 						refBuffer = new char const *[batchSize];
+						qalBuffer = new char const *[batchSize];
 
 						for (int i = 0; i < batchSize; ++i) {
 							refBuffer[i] = new char[refMaxLen];
@@ -167,6 +168,7 @@ public:
 						}
 						delete[] qryBuffer;
 						delete[] refBuffer;
+						delete[] qalBuffer;
 						delete[] alignBuffer;
 
 						delete[] reads;

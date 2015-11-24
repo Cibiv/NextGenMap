@@ -34,7 +34,7 @@ bool sortLocationScore(LocationScore a, LocationScore b) {
 int ScoreBuffer::computeMQ(float bestScore, float secondBestScore) {
 	int mq = 0;
 	if (bestScore > 0 && secondBestScore >= 0) {
-		ceil(MAX_MQ * (bestScore - secondBestScore) / bestScore);
+		mq = ceil(MAX_MQ * (bestScore - secondBestScore) / bestScore);
 	}
 	return mq;
 }
@@ -124,7 +124,7 @@ void ScoreBuffer::DoRun() {
 		//Compute scores
 		//TODO: move to NGMStats
 		ScoreBuffer::scoreCount += iScores;
-		int res = aligner->BatchScore(m_AlignMode, iScores, m_RefBuffer, m_QryBuffer, m_ScoreBuffer, (m_EnableBS) ? m_DirBuffer : 0);
+		int res = aligner->BatchScore(m_AlignMode, iScores, m_RefBuffer, m_QryBuffer, 0, m_ScoreBuffer, (m_EnableBS || slamSeq) ? m_DirBuffer : 0);
 
 		Log.Debug(16, "INFO\tSCORES\t%d scores computed (out of %d)", res, iScores);
 
@@ -530,4 +530,3 @@ void ScoreBuffer::flush() {
 	iScores = 0;
 	out->flush();
 }
-

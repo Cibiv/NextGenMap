@@ -48,9 +48,9 @@ public:
 		return 1024;
 	}
 
-	virtual int BatchScore(int const mode, int const batchSize, char const * const * const refSeqList, char const * const * const qrySeqList, float * const results, void * extData);
+	virtual int BatchScore(int const mode, int const batchSize, char const * const * const refSeqList, char const * const * const qrySeqList, char const * const * const qalSeqList, float * const results, void * extData);
 
-	virtual int BatchAlign(int const mode, int const batchSize, char const * const * const refSeqList, char const * const * const qrySeqList, Align * const results, void * extData);
+	virtual int BatchAlign(int const mode, int const batchSize, char const * const * const refSeqList, char const * const * const qrySeqList, char const * const * const qalSeqList, Align * const results, void * extData);
 
 	void convertToCIGAR(TGaps gapsText, TGaps gapsPattern, Align & result, int const readLen);
 

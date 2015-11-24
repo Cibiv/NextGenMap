@@ -41,9 +41,9 @@ public:
 	virtual int GetScoreBatchSize() const;
 	virtual int GetAlignBatchSize() const = 0;
 	virtual int BatchScore(const int mode, const int batchSize, const char * const * const refSeqList,
-			const char * const * const qrySeqList, float * const results, void * extData);
+			const char * const * const qrySeqList, char const * const * const qalSeqList, float * const results, void * extData);
 	virtual int BatchAlign(const int mode, const int batchSize, const char * const * const refSeqList,
-			const char * const * const qrySeqList, Align * const results, void * extData) = 0;
+			const char * const * const qrySeqList, char const * const * const qalSeqList, Align * const results, void * extData) = 0;
 
 	OclHost * getHost() {
 		return host;
@@ -57,13 +57,21 @@ private:
 protected:
 
 	/*Number of threads executed by each multi processor*/
+	#ifdef __APPLE__
+	static unsigned int const threads_per_block = 1;
+	#else
 	static unsigned int const threads_per_block = 256;
+	#endif
+	
 	unsigned int block_multiplier;
 	unsigned int step_count;
 
 	int alignment_length;
 	int matrix_length;
 	int config_ref_size;
+
+	bool const bsMapping;
+	int const slamSeq;
 
 	OclHost * host;
 	//static int programUserCount;

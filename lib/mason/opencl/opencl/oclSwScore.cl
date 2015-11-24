@@ -1,6 +1,6 @@
 #ifdef __CPU__
 
-#ifndef __BS__
+#ifndef __ALT_SCORING__
 __kernel void oclSW_Score(__global char const * scaff, __global char const * read, __global short * result, __global char * matrix) {
 #else
 __kernel void oclSW_Score(__global char const * scaff, __global char const * read, __global short * result, __global char * matrix, __global char const * direction) {
@@ -58,12 +58,12 @@ __kernel void oclSW_Score(__global char const * scaff, __global char const * rea
 			for (short ref_index = 0; ref_index < corridor_length - 1; ++ref_index) {
 				//init values
 				left_cell += gap_ref4;
-#ifndef __BS__
+#ifndef __ALT_SCORING__
 				float4 score = (float4)(scores[read_char_cache.s0][trans[scaff[ref_index]]], scores[read_char_cache.s1][trans[scaff[ref_index + 1 * ref_length]]], scores[read_char_cache.s2][trans[scaff[ref_index + 2 * ref_length]]], scores[read_char_cache.s3][trans[scaff[ref_index + 3 * ref_length]]]);
 				float4 diag_cell = local_matrix_line[ref_index] + score;
 				float4 pointerX = select(CIGAR_X4, CIGAR_EQ4, (score == match));
 #else
-				float4 score = select((float4)(scoresAG[read_char_cache.s0][trans[scaff[ref_index]]], scoresAG[read_char_cache.s1][trans[scaff[ref_index + 1 * ref_length]]], scoresAG[read_char_cache.s2][trans[scaff[ref_index + 2 * ref_length]]], scoresAG[read_char_cache.s3][trans[scaff[ref_index + 3 * ref_length]]]), (float4)(scoresTC[read_char_cache.s0][trans[scaff[ref_index]]], scoresTC[read_char_cache.s1][trans[scaff[ref_index + 1 * ref_length]]], scoresTC[read_char_cache.s2][trans[scaff[ref_index + 2 * ref_length]]], scoresTC[read_char_cache.s3][trans[scaff[ref_index + 3 * ref_length]]]), direction4 == 0);
+				float4 score = select((float4)(scoresREV[read_char_cache.s0][trans[scaff[ref_index]]], scoresREV[read_char_cache.s1][trans[scaff[ref_index + 1 * ref_length]]], scoresREV[read_char_cache.s2][trans[scaff[ref_index + 2 * ref_length]]], scoresREV[read_char_cache.s3][trans[scaff[ref_index + 3 * ref_length]]]), (float4)(scoresFWD[read_char_cache.s0][trans[scaff[ref_index]]], scoresFWD[read_char_cache.s1][trans[scaff[ref_index + 1 * ref_length]]], scoresFWD[read_char_cache.s2][trans[scaff[ref_index + 2 * ref_length]]], scoresFWD[read_char_cache.s3][trans[scaff[ref_index + 3 * ref_length]]]), direction4 == 0);
 
 				float4 diag_cell = local_matrix_line[ref_index] + score;
 				float4 pointerX = select(CIGAR_X4, CIGAR_EQ4, (read_char_cache == (int4)(trans[scaff[ref_index]], trans[scaff[ref_index + 1 * ref_length]], trans[scaff[ref_index + 2 * ref_length]], trans[scaff[ref_index + 3 * ref_length]])));
@@ -107,7 +107,7 @@ __kernel void oclSW_Score(__global char const * scaff, __global char const * rea
 }
 
 
-#ifndef __BS__
+#ifndef __ALT_SCORING__
 __kernel void oclSW(__global char const * scaff, __global char const * read, __global float * results) {
 #else
 __kernel void oclSW(__global char const * scaff, __global char const * read, __global float * results, __global char const * direction) {
@@ -137,10 +137,10 @@ __kernel void oclSW(__global char const * scaff, __global char const * read, __g
 				//Max can be set to left_cell because we are computing the score row-wise, so the actual max is the left_cell for the next cell
 				left_cell = max(null4, left_cell + gap_ref);
 				left_cell = max(matrix_lines[(ref_index + 1)] + gap_read, left_cell);
-#ifndef __BS__
+#ifndef __ALT_SCORING__
 				float4 scores4 = (float4)(scores[read_char_cache.s0][trans[scaff[ref_index]]], scores[read_char_cache.s1][trans[scaff[ref_index + 1 * ref_length]]], scores[read_char_cache.s2][trans[scaff[ref_index + 2 * ref_length]]], scores[read_char_cache.s3][trans[scaff[ref_index + 3 * ref_length]]]);
 #else
-				float4 scores4 = select((float4)(scoresAG[read_char_cache.s0][trans[scaff[ref_index]]], scoresAG[read_char_cache.s1][trans[scaff[ref_index + 1 * ref_length]]], scoresAG[read_char_cache.s2][trans[scaff[ref_index + 2 * ref_length]]], scoresAG[read_char_cache.s3][trans[scaff[ref_index + 3 * ref_length]]]), (float4)(scoresTC[read_char_cache.s0][trans[scaff[ref_index]]], scoresTC[read_char_cache.s1][trans[scaff[ref_index + 1 * ref_length]]], scoresTC[read_char_cache.s2][trans[scaff[ref_index + 2 * ref_length]]], scoresTC[read_char_cache.s3][trans[scaff[ref_index + 3 * ref_length]]]), direction4 == 0);
+				float4 scores4 = select((float4)(scoresREV[read_char_cache.s0][trans[scaff[ref_index]]], scoresREV[read_char_cache.s1][trans[scaff[ref_index + 1 * ref_length]]], scoresREV[read_char_cache.s2][trans[scaff[ref_index + 2 * ref_length]]], scoresREV[read_char_cache.s3][trans[scaff[ref_index + 3 * ref_length]]]), (float4)(scoresFWD[read_char_cache.s0][trans[scaff[ref_index]]], scoresFWD[read_char_cache.s1][trans[scaff[ref_index + 1 * ref_length]]], scoresFWD[read_char_cache.s2][trans[scaff[ref_index + 2 * ref_length]]], scoresFWD[read_char_cache.s3][trans[scaff[ref_index + 3 * ref_length]]]), direction4 == 0);
 #endif
 				left_cell = max(matrix_lines[ref_index] + scores4, left_cell);
 				curr_max = max(curr_max, left_cell);
@@ -215,7 +215,7 @@ void interleaveSeq(__global char const * _src, __global char * dest) {
 
 #ifdef __GPU__
 
-#ifndef __BS__
+#ifndef __ALT_SCORING__
 __kernel void oclSW_Score(__global char const * scaff, __global char const * read, __global short * result, __global char * matrix) {
 #else
 __kernel void oclSW_Score(__global char const * scaff, __global char const * read, __global short * result, __global char * matrix, __global char const * direction) {
@@ -270,15 +270,15 @@ __kernel void oclSW_Score(__global char const * scaff, __global char const * rea
 			//			printf("%c == %c\n", read_char_cache, scaff[ref_index * interleave_number]);
 			int pointer = CIGAR_X;
 
-#ifndef __BS__
+#ifndef __ALT_SCORING__
 			diag_cell += scores[trans[read_char_cache]][trans[scaff[ref_index * interleave_number]]];
 			pointer = select(CIGAR_X, CIGAR_EQ, (read_char_cache == scaff[ref_index * interleave_number]));
 #else
 			short score = 0;
 			if(direction[global_index] == 0) {
-				score = scoresTC[trans[read_char_cache]][trans[scaff[ref_index * interleave_number]]];
+				score = scoresFWD[trans[read_char_cache]][trans[scaff[ref_index * interleave_number]]];
 			} else {
-				score = scoresAG[trans[read_char_cache]][trans[scaff[ref_index * interleave_number]]];
+				score = scoresREV[trans[read_char_cache]][trans[scaff[ref_index * interleave_number]]];
 			}
 			diag_cell += score;
 			pointer = select(CIGAR_X, CIGAR_EQ, (read_char_cache == scaff[ref_index * interleave_number]));
@@ -328,7 +328,7 @@ __kernel void oclSW_Score(__global char const * scaff, __global char const * rea
 	}
 }
 
-#ifndef __BS__
+#ifndef __ALT_SCORING__
 __kernel void oclSW(__global char const * scaff, __global char const * read, __global float * results) {
 #else
 __kernel void oclSW(__global char const * scaff, __global char const * read, __global float * results, __global char const * direction) {
@@ -354,13 +354,13 @@ __kernel void oclSW(__global char const * scaff, __global char const * read, __g
 		for (int ref_index = 0; ref_index < (corridor_length - 1); ++ref_index) {
 
 			short diag_cell = matrix_lines[ref_index * threads_per_block];
-#ifndef __BS__
+#ifndef __ALT_SCORING__
 			diag_cell += scores[trans[read_char_cache]][trans[scaff[ref_index * interleave_number]]];
 #else
 			if(direction[global_index] == 0) {
-				diag_cell += scoresTC[trans[read_char_cache]][trans[scaff[ref_index * interleave_number]]];
+				diag_cell += scoresFWD[trans[read_char_cache]][trans[scaff[ref_index * interleave_number]]];
 			} else {
-				diag_cell += scoresAG[trans[read_char_cache]][trans[scaff[ref_index * interleave_number]]];
+				diag_cell += scoresREV[trans[read_char_cache]][trans[scaff[ref_index * interleave_number]]];
 			}
 #endif
 			//Max can be set to left_cell because we are computing the score row-wise, so the actual max is the left_cell for the next cell
