@@ -41,9 +41,11 @@ private:
 	TConfigMap * config_map;
 	TConfigMap * config_arrays;
 
+	std::string empty;
+
 	bool InternalExists(std::string name) const;
-	std::string InternalGet(std::string name, char const * * arr_data) const;
-	std::string InternalGet(std::string name) const;
+	std::string const & InternalGet(std::string name, char const * * arr_data) const;
+	std::string const & InternalGet(std::string name) const;
 	void InternalAdd(std::string name, std::string value, std::string arr_data, bool override = false);
 	void ParseFile(char const * const filename);
 	void ParseArguments(int argc, char * argv[]);

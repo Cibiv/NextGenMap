@@ -42,11 +42,11 @@ bool _Config::InternalExists(std::string name) const {
 	return config_map->count(name) == 1;
 }
 
-std::string _Config::InternalGet(std::string name, char const * * arr_data) const {
+std::string const & _Config::InternalGet(std::string name, char const * * arr_data) const {
 	std::transform(name.begin(), name.end(), name.begin(), ::tolower);
 	if (!InternalExists(name)) {
 		Log.Warning("Tried to access unknown config value \"%s\"", name.c_str());
-		return "";
+		return empty;
 	} else {
 		if (arr_data != 0) {
 			if (config_arrays->count(name) == 0) {
@@ -58,7 +58,7 @@ std::string _Config::InternalGet(std::string name, char const * * arr_data) cons
 		return (*config_map)[name];
 	}
 }
-std::string _Config::InternalGet(std::string name) const {
+std::string const & _Config::InternalGet(std::string name) const {
 	return InternalGet(name, 0);
 }
 
