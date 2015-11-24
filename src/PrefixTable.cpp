@@ -237,7 +237,7 @@ void CompactPrefixTable::test() {
 			uloc start = index[j].m_TabIndex - 1;
 			//TODO: Fix Invalid read of size 4
 			int maxLength = index[j + 1].m_TabIndex - 1 - start;
-			if (!(maxLength >= 0 && maxLength <= 1000 && start >= 0
+			if (!(maxLength >= 0 && maxLength <= 1000
 					&& start < unit->cRefTableLen)) {
 				printf("Error in index:\n");
 				printf("%d: %u %d %d\n", j - 1, index[j - 1].m_TabIndex,
@@ -258,7 +258,7 @@ void CompactPrefixTable::test() {
 		Log.Message("Table length: %u", tableLen);
 		for (uint j = 0; j < tableLen; ++j) {
 			uloc pos = positions[j].m_Location + unit->Offset;
-			if (!(pos >= 0 && pos < SequenceProvider.GetConcatRefLen())) {
+			if (!(pos < SequenceProvider.GetConcatRefLen())) {
 				printf("Error in table");
 				printf("%u: %u\n", j, positions[j].m_Location);
 			}
@@ -490,7 +490,7 @@ void CompactPrefixTable::BuildSNPTable() {
 		int region_len = 2 * (m_PrefixLength + region_extension);
 
 		char* buffer_tmp = new char[region_len + 1];
-		memset(buffer_tmp, 0, sizeof(buffer_tmp));
+		memset(buffer_tmp, 0, sizeof(char));
 		SequenceProvider.DecodeRefSequence(buffer_tmp,0, snp.pos - region_len / 2, region_len);
 		buffer_tmp[region_len] = 0;
 
@@ -859,9 +859,8 @@ bool CompactPrefixTable::readFromFile(char const * fileName) {
 	if (cookie != refTabCookie || prefixBasecount != m_PrefixLength
 			|| refskip != m_RefSkip) {
 		fclose(fp);
-		Log.Error("Invalid reference table found: %s", fileName);
-		Log.Error("Please delete it and run NGM again.");
-		Fatal();
+		Log.Error("Invalid reference table found: %s, rebuilding...", fileName);
+		return false;
 	}
 
 	read = fread(&m_UnitCount, sizeof(uint), 1, fp);
