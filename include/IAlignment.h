@@ -37,6 +37,9 @@ static int const cCookie = 0x10201130;
  */
 class IAlignment {
 public:
+
+	virtual ~IAlignment() {};
+
 	virtual int GetScoreBatchSize() const = 0;
 	virtual int GetAlignBatchSize() const = 0;
 
