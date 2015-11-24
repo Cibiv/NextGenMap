@@ -55,10 +55,6 @@ private:
 	char* binRef;
 	uloc binRefIndex;
 
-	// Files
-	std::string refFileName;
-	std::string refBaseFileName;
-
 	uloc refFileLen;
 	uloc refCplFileLen;
 

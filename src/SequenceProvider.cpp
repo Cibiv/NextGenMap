@@ -15,6 +15,15 @@
 
 #include <iostream>
 
+#include <stdio.h>
+#include <zlib.h>
+
+#include "Timing.h"
+
+#include "kseq.h"
+
+KSEQ_INIT(gzFile, gzread)
+
 #undef module_name
 #define module_name "SEQPROV"
 
@@ -30,40 +39,6 @@ _SequenceProvider & _SequenceProvider::Instance() {
 //static int const maxRefCount = 32768;
 static int const maxRefCount = 2147483647;
 static uint const refEncCookie = 0x74656;
-
-//const size_t _SequenceProvider::MAX_REF_NAME_LENGTH = 150;
-
-//bool checkChar(char c) {
-//	return (c == 'A') | (c == 'C') | (c == 'T') | (c == 'G');
-//}
-//
-//// checked die sequence seq auf ACGT, liefert das erste auftreten eines von diesen
-//// buchstaben unterschiedlichen zeichens ...4-basen-worte (32bit) verwenden?
-//int checkSequence(char * seq, uint len) {
-//	for (uint n = 0; n < len; ++n) {
-//		if (!checkChar(*(seq + n)))
-//			return n;
-//		++n;
-//	}
-//	return -1;
-//}
-
-std::string CheckFile(std::string filename, char const * const name) {
-	if (!FileExists(filename.c_str())) {
-		Log.Error("%s file not found (%s)", name, filename.c_str());
-		Fatal();
-	}
-	return filename;
-}
-
-#include <stdio.h>
-#include <zlib.h>
-
-#include "Timing.h"
-
-#include "kseq.h"
-
-KSEQ_INIT(gzFile, gzread)
 
 //static inline char enc4(char c) {
 //	c = toupper(c);
@@ -253,18 +228,21 @@ uloc getSize(char const * const file) {
 void _SequenceProvider::Init(bool dualstrand) {
 	DualStrand = dualstrand;
 	Log.Verbose("Init sequence provider.");
-	if (!Config.Exists("ref")) {
-		Log.Error("No reference file specified.");
+
+	char const * refFileChar = 0;
+	if (Config.Exists("ref")) {
+		refFileChar = Config.GetString("ref");
+		if (!FileExists(refFileChar)) {
+			Log.Error("Reference file not found (%s)", refFileChar);
+			Fatal();
+		}
+	} else {
+		Log.Error("Reference file not found. Please use -r/--ref parameter to specify the reference sequence.", refFileChar);
 		Fatal();
 	}
-//	if (NGM.Paired() && !Config.Exists("pqry")) {
-//		Log.Error("No paired query file specified.");
-//		Fatal();
-//	}
 
-	CheckFile(refBaseFileName = Config.GetString("ref"), "RefBase");
-
-	refFileName = Config.GetString("ref") + std::string("-enc.2.ngm");
+	std::string refFileName = std::string(Config.GetString("ref"))
+			+ std::string("-enc.2.ngm");
 
 	//uint64 used everywhere but in CS rTable, there GetBin division increases range
 	const uloc REF_LEN_MAX = UINT_MAX
