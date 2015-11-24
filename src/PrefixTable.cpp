@@ -169,7 +169,7 @@ void CompactPrefixTable::stats() {
 	if (Config.Exists(MAX_KFREQ)) {
 		Log.Warning("Max. k-mer frequency overwritten!");
 	} else {
-		int maxkFreq = avg + 5 * stdev;
+		int maxkFreq = ceil(std::max(100.0, avg + 5 * stdev));
 		((_Config*) _config)->Default(MAX_KFREQ, maxkFreq);
 		Log.Warning("Max. k-mer frequency set so %d!", maxkFreq);
 	}
