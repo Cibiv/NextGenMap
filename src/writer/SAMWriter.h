@@ -8,7 +8,7 @@ public:
 //		SAMWriter(char const * const filename) :
 //			GenericReadWriter(filename) {
 	SAMWriter(FileWriter * writer) :
-			GenericReadWriter() {
+			GenericReadWriter(), slamSeq(Config.GetInt(SLAM_SEQ)) {
 
 		if(Config.Exists(RG_ID)) {
 			RG = Config.GetString(RG_ID);
@@ -37,6 +37,8 @@ private:
 	FileWriter * m_Writer;
 
 	char const * RG;
+
+	int const slamSeq;
 };
 
 #endif

@@ -12,7 +12,7 @@ public:
 //	BAMWriter(char const * const filename) :
 //			GenericReadWriter(filename), file(filename) {
 	BAMWriter(FileWriterBam * pWriter, char const * const pFile) :
-			GenericReadWriter(), writer(pWriter), file(pFile) {
+			GenericReadWriter(), writer(pWriter), file(pFile), slamSeq(Config.GetInt(SLAM_SEQ)) {
 		NGMInitMutex(&m_OutputMutex);
 		bufferIndex = 0;
 		//Log.Error("BAM output not supported at the moment!");
@@ -53,6 +53,8 @@ private:
 	int bufferIndex;
 
 	std::string RG;
+
+	bool const slamSeq;
 
 };
 

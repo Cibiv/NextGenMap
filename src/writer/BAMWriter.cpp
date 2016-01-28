@@ -1,6 +1,5 @@
 #include "BAMWriter.h"
 
-#ifdef _BAM
 
 #include <string.h>
 #include <iostream>
@@ -256,6 +255,28 @@ void BAMWriter::DoWriteReadGeneric(MappedRead const * const read, int const scor
 		al->AddTag("RG", "Z", RG);
 	}
 
+	//Add TC and RA tag for TC conversions and feedback of all mutations
+	if(slamSeq && read->Alignments[scoreId].ExtendedData != 0) {
+
+		char * mp = 0;
+		size_t mpIndex = 0;
+		char * ra = 0;
+		size_t raIndex = 0;
+
+		int tcCount = computeSlaSeqTags(read, scoreId, mp, mpIndex, ra, raIndex);
+		al->AddTag("TC", "i", tcCount);
+
+		al->AddTag("RA", "Z", std::string(ra));
+		if(mpIndex > 0) {
+			al->AddTag("MP", "Z", std::string(mp));
+		}
+		delete[] mp;
+		mp = 0;
+		delete[] ra;
+		ra = 0;
+	}
+
+
 	buffer[bufferIndex++] = al;
 	if (bufferIndex == (10000 - 1)) {
 		writer->SaveAlignment(buffer, bufferIndex);
@@ -413,4 +434,3 @@ void BAMWriter::DoWriteEpilog() {
 //	writer->Close();
 }
 
-#endif
