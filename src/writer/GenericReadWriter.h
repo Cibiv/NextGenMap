@@ -20,7 +20,8 @@ class GenericReadWriter {
 
 public:
 
-	GenericReadWriter() {
+	GenericReadWriter() :
+			baseNumber(5) {
 		writeBuffer = new char[BUFFER_SIZE];
 		bufferPosition = 0;
 
@@ -37,14 +38,19 @@ public:
 protected:
 
 	virtual void DoWriteProlog() = 0;
-	virtual void DoWriteRead(MappedRead const * const read, int const scoreID) = 0;
-	virtual void DoWritePair(MappedRead const * const read1, int const scoreId1, MappedRead const * const read2, int const scoreId2) = 0;
-	virtual void DoWriteUnmappedRead(MappedRead const * const read, int flags = 0x4) = 0;
+	virtual void DoWriteRead(MappedRead const * const read,
+			int const scoreID) = 0;
+	virtual void DoWritePair(MappedRead const * const read1, int const scoreId1,
+			MappedRead const * const read2, int const scoreId2) = 0;
+	virtual void DoWriteUnmappedRead(MappedRead const * const read, int flags =
+			0x4) = 0;
 	virtual void DoWriteEpilog() = 0;
 
 	float identity;
 
 	bool writeUnmapped;
+
+	int const baseNumber;
 
 	static int const BUFFER_SIZE = 17000000;
 	static int const BUFFER_LIMIT = 16000000;
@@ -71,6 +77,108 @@ private:
 public:
 	void WriteProlog() {
 		DoWriteProlog();
+	}
+
+	int computeSlaSeqTags(MappedRead const * const read, int const scoreID,
+			char * & mp, size_t & mpIndex, char * & ra, size_t & raIndex) {
+
+		// Rates contains the number and type of matches/mismatches in the alignment
+		//               Read
+		//			 A	 C	 G	 T	 N
+		//  	A 	 0	 1	 2	 3	 4
+		// R	C 	 5	 6	 7	 8	 9
+		// e	G 	10	11	12	13	14
+		// f	T 	15	16	17	18	19
+		//  	N 	20	21	22	23	24
+		int * rates = new int[baseNumber * baseNumber + 1];
+		memset(rates, 0, sizeof(int) * baseNumber * baseNumber);
+
+		AlignmentPosition * alignmentPositons =
+				(AlignmentPosition *) read->Alignments[scoreID].ExtendedData;
+
+		// MismatchPositions
+		// <type1>:<readPos1>,<type2>:<readPos2>,...
+		// For reverse reads order should be reversed -> Last position of the read is reported as first
+		mp = new char[read->length * 10];
+		mpIndex = 0;
+
+		if (read->Scores[scoreID].Location.isReverse()) {
+			//Get number of alignment positions
+			//TODO: pass length
+			size_t alignIndex = 0;
+			while (alignmentPositons[alignIndex].type > -1) {
+				alignIndex += 1;
+			}
+
+			for (int i = alignIndex - 1; i >= 0; i--) {
+				if (alignmentPositons[i].type >= 0
+						&& alignmentPositons[i].type
+								< (baseNumber * baseNumber)) {
+					//Increase count in rates array
+					rates[alignmentPositons[i].type] += 1;
+					if (!alignmentPositons[i].match) {
+						mpIndex += sprintf(mp + mpIndex, "%d:%d,",
+								alignmentPositons[i].type,
+								read->length
+										- alignmentPositons[i].readPosition);
+					}
+
+				} else {
+					Log.Error("Error while printing T->C rates for SlamSeq output.");
+					Log.Message("%d - %d: %d", i, alignmentPositons[i].type, alignmentPositons[i].readPosition);
+					exit(1);
+				}
+
+			}
+		} else {
+			// Same but for forward reads
+			size_t alignIndex = 0;
+			while (alignmentPositons[alignIndex].type > -1) {
+				if (alignmentPositons[alignIndex].type >= 0
+						&& alignmentPositons[alignIndex].type
+						< (baseNumber * baseNumber)) {
+					//Increase count in rates array
+					rates[alignmentPositons[alignIndex].type] += 1;
+					if (!alignmentPositons[alignIndex].match) {
+						mpIndex += sprintf(mp + mpIndex, "%d:%d,",
+								alignmentPositons[alignIndex].type, alignmentPositons[alignIndex].readPosition
+								+ 1);
+					}
+
+				} else {
+					Log.Error("Error while printing T->C rates for SlamSeq output.");
+					Log.Message("%d: %d", alignmentPositons[alignIndex].type, alignmentPositons[alignIndex].readPosition);
+					exit(1);
+				}
+
+				alignIndex += 1;
+			}
+		}
+		if (mpIndex > 0) {
+			mp[mpIndex - 1] = '\0';
+		}
+
+		ra = new char[baseNumber * baseNumber * 4];
+		raIndex = 0;
+		for (int i = 0; i < baseNumber; ++i) {
+			for (int j = 0; j < baseNumber; ++j) {
+				int number = rates[i * baseNumber + j];
+				raIndex += sprintf(ra + raIndex, "%d,", number);
+			}
+		}
+		ra[raIndex] = '\0';
+
+		int tcCount = 0;
+		if (read->Scores[scoreID].Location.isReverse()) {
+			tcCount = rates[baseNumber * 0 + 2];
+		} else {
+			tcCount = rates[baseNumber * 3 + 1];
+		}
+		delete[] rates;
+		rates = 0;
+
+		return tcCount;
+
 	}
 
 	void WriteRead(MappedRead * read, bool mapped = true) {
@@ -148,7 +256,9 @@ public:
 			//TODO: fix paired end!!! MULTI MAP!
 
 			static float const minIdentity = Config.GetFloat("min_identity", 0.0f, 1.0f);
-			static float minResidues = Config.GetFloat("min_residues", 0, 1000);
+			static float const minResiduesConfig = Config.GetFloat("min_residues", 0, 1000);
+			float minResidues = minResiduesConfig;
+			static int const min_mq = Config.GetInt(MIN_MQ);
 
 			float minResidues1 = 0.0f;
 			float minResidues2 = 0.0f;
@@ -160,9 +270,9 @@ public:
 				minResidues1 = minResidues2 = minResidues;
 			}
 
-			bool mapped1 = read1->hasCandidates() && (read1->Alignments[scoreId1].Identity >= minIdentity)
+			bool mapped1 = read1->hasCandidates() && read1->mappingQlty >= min_mq && (read1->Alignments[scoreId1].Identity >= minIdentity)
 			&& ((float)(read1->length - read1->Alignments[scoreId1].QStart - read1->Alignments[scoreId1].QEnd) >= minResidues1);
-			bool mapped2 = read2->hasCandidates() && (read2->Alignments[scoreId2].Identity >= minIdentity)
+			bool mapped2 = read2->hasCandidates() && read2->mappingQlty >= min_mq && (read2->Alignments[scoreId2].Identity >= minIdentity)
 			&& ((float)(read2->length - read2->Alignments[scoreId2].QStart - read2->Alignments[scoreId2].QEnd) >= minResidues2);
 
 			if (!mapped1) {

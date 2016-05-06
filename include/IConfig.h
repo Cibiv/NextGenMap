@@ -39,6 +39,15 @@ static char const * const ARGOS = "argos";
 static char const * const ARGOS_MINSCORE = "argos_min_score";
 static char const * const GZ = "gz";
 
+static char const * const MAX_READ_LENGTH = "max_read_length";
+static char const * const RLENGTH_CHECK = "force_rlength_check";
+
+static char const * const BIN_SIZE = "bin_size";
+static char const * const SLAM_SEQ = "slam_seq";
+
+static char const * const MAX_KFREQ = "max_kfreq";
+static char const * const TRIM5 = "trim5";
+
 #ifdef DEBUGLOG
 static char const * const LOG = "log";
 static char const * const LOG_LVL = "log_lvl";

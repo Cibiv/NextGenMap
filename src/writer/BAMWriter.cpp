@@ -1,6 +1,5 @@
 #include "BAMWriter.h"
 
-#ifdef _BAM
 
 #include <string.h>
 #include <iostream>
@@ -132,12 +131,12 @@ void BAMWriter::addAdditionalInfo(const MappedRead * const read, BamAlignment * 
 								atoi(token.substr(last + 1, token.length() - last).c_str()));
 					} else if (type == Constants::BAM_TAG_TYPE_UINT8 || type == Constants::BAM_TAG_TYPE_UINT16
 							|| type == Constants::BAM_TAG_TYPE_UINT32) {
-						token.substr(first + 1, last - first - 1), atoi(token.substr(last + 1, token.length() - last).c_str());
+						//token.substr(first + 1, last - first - 1), atoi(token.substr(last + 1, token.length() - last).c_str());
 					} else if (type == Constants::BAM_TAG_TYPE_STRING || type == Constants::BAM_TAG_TYPE_ASCII) {
 						al->AddTag(token.substr(0, first), token.substr(first + 1, last - first - 1),
 								token.substr(last + 1, token.length() - last));
 					} else if (type == Constants::BAM_TAG_TYPE_FLOAT) {
-						token.substr(first + 1, last - first - 1), atof(token.substr(last + 1, token.length() - last).c_str());
+						//token.substr(first + 1, last - first - 1), atof(token.substr(last + 1, token.length() - last).c_str());
 					}
 				}
 			}
@@ -256,6 +255,28 @@ void BAMWriter::DoWriteReadGeneric(MappedRead const * const read, int const scor
 	if(RG.size() > 0) {
 		al->AddTag("RG", "Z", RG);
 	}
+
+	//Add TC and RA tag for TC conversions and feedback of all mutations
+	if(slamSeq && read->Alignments[scoreId].ExtendedData != 0) {
+
+		char * mp = 0;
+		size_t mpIndex = 0;
+		char * ra = 0;
+		size_t raIndex = 0;
+
+		int tcCount = computeSlaSeqTags(read, scoreId, mp, mpIndex, ra, raIndex);
+		al->AddTag("TC", "i", tcCount);
+
+		al->AddTag("RA", "Z", std::string(ra));
+		if(mpIndex > 0) {
+			al->AddTag("MP", "Z", std::string(mp));
+		}
+		delete[] mp;
+		mp = 0;
+		delete[] ra;
+		ra = 0;
+	}
+
 
 	buffer[bufferIndex++] = al;
 	if (bufferIndex == (10000 - 1)) {
@@ -414,4 +435,3 @@ void BAMWriter::DoWriteEpilog() {
 //	writer->Close();
 }
 
-#endif

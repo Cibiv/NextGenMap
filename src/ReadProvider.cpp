@@ -32,7 +32,8 @@ using NGMNames::ReadStatus;
 
 static IRefProvider const * m_RefProvider;
 static RefEntry * m_entry;
-static std::map<SequenceLocation, float> iTable; // fallback
+static uint m_entryCount;
+static std::map<uloc, float> iTable; // fallback
 
 //uint const estimateSize = 10000;
 uint const estimateSize = 10000000;
@@ -41,35 +42,23 @@ uint const estimateThreshold = 1000;
 uint const maxReadLength = 1000;
 
 float * maxHitTable;
-#ifdef _DEBUGRP
-float * maxHitTableDebug;
-#endif
 int maxHitTableIndex;
 int m_CurrentReadLength;
 
 ReadProvider::ReadProvider() :
 		parser1(0), parser2(0), peDelimiter(
 		Config.GetString("pe_delimiter")[0]), isPaired(
-		Config.GetInt("paired") > 0), skipMateCheck(Config.GetInt(SKIP_MATE_CHECK) == 1) {
+		Config.GetInt("paired") > 0), skipMateCheck(
+		Config.GetInt(SKIP_MATE_CHECK) == 1) {
 
-}
-
-inline int GetBin(uint pos) {
-	static int shift = CS::calc_binshift(20);
-	return pos >> shift;
-	//return pos;
 }
 
 int CollectResultsFallback(int const readLength) {
 	float maxCurrent = 0;
 
-	Log.Verbose("-maxHitTableIndex: %d", maxHitTableIndex);
-	for (std::map<SequenceLocation, float>::iterator itr = iTable.begin(); itr != iTable.end(); itr++) {
+	for (std::map<uloc, float>::iterator itr = iTable.begin();
+			itr != iTable.end(); itr++) {
 		maxCurrent = std::max(maxCurrent, itr->second);
-
-		//if(maxHitTableIndex == 8) {
-		Log.Verbose("---Key: %d %u %d, maxCurrent: %f, itr->second: %f", itr->first.getrefId(), itr->first.m_Location, (int)itr->first.isReverse(), maxCurrent, itr->second);
-		//}
 	}
 
 	static const int skip = (
@@ -79,57 +68,65 @@ int CollectResultsFallback(int const readLength) {
 	int max = ceil((readLength - CS::prefixBasecount + 1) / skip * 1.0);
 
 	if (max > 1.0f && maxCurrent <= max) {
-#ifdef _DEBUGRP
-		maxHitTableDebug[maxHitTableIndex] = maxCurrent;
-#endif
 		maxHitTable[maxHitTableIndex++] = (maxCurrent / ((max))); // * 0.85f + 0.05f;
-		//Log.Message("Result: %f, %f, %f, %f -> %f", maxCurrent, maxCurrent / seq->seq.l, max, max / seq->seq.l, maxHitTable[maxHitTableIndex-1]);
 	}
 
 	iTable.clear();
-
 	return 0;
 }
 
-static void PrefixSearch(ulong prefix, uint pos, ulong mutateFrom, ulong mutateTo, void* data) {
+static void PrefixSearch(ulong prefix, uloc pos, ulong mutateFrom,
+		ulong mutateTo, void* data) {
 
-	RefEntry const * cur = m_RefProvider->GetRefEntry(prefix, m_entry); // Liefert eine liste aller Vorkommen dieses Praefixes in der Referenz
+	static const int maxPrefixFreq = Config.GetInt(MAX_KFREQ);
 
-	while (cur != 0) {
-		//Get kmer-weight.
+	RefEntry const * entries = m_RefProvider->GetRefEntry(prefix, m_entry); // Liefert eine liste aller Vorkommen dieses Praefixes in der Referenz
+	RefEntry const * cur = entries;
+
+	if (cur != 0 && cur->refTotal < maxPrefixFreq) {
+		for (int i = 0; i < m_entryCount; i++) {
+			//Get kmer-weight.
 //		float weight = cur->weight;
-		float weight = 1.0f;
+			float weight = 1.0f;
 
-		int const n = cur->refCount;
+			int const n = cur->refCount;
 
-		Log.Verbose("------Prefix: %u, RefCount: %d", prefix, n);
+			if (cur->reverse) {
+				for (int i = 0; i < n; ++i) {
+					uloc curLoc =
+							cur->getRealLocation(cur->ref[i])
+									- (m_CurrentReadLength
+											- (pos + CS::prefixBasecount));
+					curLoc = GetBin(curLoc); // position offset
+					if (iTable.count(curLoc) == 0) {
+						iTable[curLoc] = weight;
+					} else {
+						iTable[curLoc] += weight;
+					}
+				}
 
-		if (cur->reverse) {
-			for (int i = 0; i < n; ++i) {
-				SequenceLocation curLoc = cur->ref[i];
-				curLoc.setRefId(1);
-				curLoc.setReverse(true);
-				curLoc.m_Location = GetBin(curLoc.m_Location - (m_CurrentReadLength - (pos + CS::prefixBasecount))); // position offset
-				iTable[curLoc] += weight;
+			} else {
+				for (int i = 0; i < n; ++i) {
+					uloc curLoc = cur->getRealLocation(cur->ref[i]) - pos;
+					curLoc = GetBin(curLoc); // position offset
+					if (iTable.count(curLoc) == 0) {
+						iTable[curLoc] = weight;
+					} else {
+						iTable[curLoc] += weight;
+					}
+				}
 			}
 
-		} else {
-			for (int i = 0; i < n; ++i) {
-				SequenceLocation curLoc = cur->ref[i];
-				curLoc.setRefId(0);
-				curLoc.setReverse(false);
-				curLoc.m_Location = GetBin(curLoc.m_Location - pos); // position offset
-				iTable[curLoc] += weight;
-			}
+			cur++;
 		}
-
-		cur = cur->nextEntry;
 	}
 }
 
-void PrefixMutateSearchEx(ulong prefix, uint pos, ulong mutateFrom, ulong mutateTo, void* data, int mpos = 0);
+void PrefixMutateSearchEx(ulong prefix, uloc pos, ulong mutateFrom,
+		ulong mutateTo, void* data, int mpos = 0);
 
-void PrefixMutateSearch(ulong prefix, uint pos, ulong mutateFrom, ulong mutateTo, void* data) {
+void PrefixMutateSearch(ulong prefix, uloc pos, ulong mutateFrom,
+		ulong mutateTo, void* data) {
 	static int const cMutationLocLimit =
 	Config.Exists("bs_cutoff") ? Config.GetInt("bs_cutoff") : 6;
 	ulong const mask = 0x3;
@@ -145,7 +142,8 @@ void PrefixMutateSearch(ulong prefix, uint pos, ulong mutateFrom, ulong mutateTo
 		PrefixMutateSearchEx(prefix, pos, mutateFrom, mutateTo, data);
 }
 
-void PrefixMutateSearchEx(ulong prefix, uint pos, ulong mutateFrom, ulong mutateTo, void* data, int mpos) {
+void PrefixMutateSearchEx(ulong prefix, uloc pos, ulong mutateFrom,
+		ulong mutateTo, void* data, int mpos) {
 	PrefixSearch(prefix, pos, mutateFrom, mutateTo, data);
 
 	ulong const mask = 0x3;
@@ -155,16 +153,24 @@ void PrefixMutateSearchEx(ulong prefix, uint pos, ulong mutateFrom, ulong mutate
 		if (cur == mutateFrom) {
 			ulong p1 = (prefix & ~(mask << (i * 2)));
 			ulong p2 = (mutateTo << (i * 2));
-			PrefixMutateSearchEx(p1 | p2, pos, mutateFrom, mutateTo, data, i + 1);
+			PrefixMutateSearchEx(p1 | p2, pos, mutateFrom, mutateTo, data,
+					i + 1);
 		}
 	}
 }
 
 uint ReadProvider::init() {
-	typedef void (*PrefixIterationFn)(ulong prefix, uint pos, ulong mutateFrom, ulong mutateTo, void* data);
+	typedef void (*PrefixIterationFn)(ulong prefix, uloc pos, ulong mutateFrom,
+			ulong mutateTo, void* data);
 	PrefixIterationFn fnc = &PrefixSearch;
 
 	bool const isPaired = Config.GetInt("paired") > 1;
+
+	if (isPaired) {
+		Log.Message("Input is paired end data.");
+	} else {
+		Log.Message("Input is single end data.");
+	}
 
 	char const * const fileName1 =
 	Config.Exists("qry1") ?
@@ -173,19 +179,25 @@ uint ReadProvider::init() {
 	char const * const fileName2 =
 	Config.Exists("qry2") ? Config.GetString("qry2") : 0;
 
+	Log.Message("Opening file %s for reading", fileName1);
+	if (fileName2 != 0) {
+		Log.Message("Opening file %s for reading", fileName2);
+	}
+
 	bool m_EnableBS = false;
 	m_EnableBS = (Config.GetInt("bs_mapping", 0, 1) == 1);
 
 	if (m_EnableBS)
 		fnc = &PrefixMutateSearch;
 
-	Log.Message("Initializing ReadProvider");
+	Log.Verbose("Initializing ReadProvider");
 
 	uint readCount = 0;
 	Timer tmr;
 	tmr.ST();
 	size_t maxLen = 0;
-	bool estimate = !(Config.Exists("skip_estimate") && Config.GetInt("skip_estimate"));
+	bool estimate = !(Config.Exists("skip_estimate")
+			&& Config.GetInt("skip_estimate"));
 	if (!Config.Exists("qry_max_len") || estimate) {
 		//default value for estimation
 		static int const qryMaxLen = 10000;
@@ -193,15 +205,13 @@ uint ReadProvider::init() {
 		if (estimate) {
 			Log.Message("Estimating parameter from data");
 
-#ifdef _DEBUGRP
-			maxHitTableDebug = new float[estimateSize];
-#endif
 			maxHitTable = new float[estimateSize];
 			maxHitTableIndex = 0;
 
 			m_RefProvider = NGM.GetRefProvider(0);
-			m_entry = new RefEntry(0);
-			m_entry->nextEntry = new RefEntry(0);
+
+			m_entryCount = m_RefProvider->GetRefEntryChainLength();
+			m_entry = new RefEntry[ m_entryCount ];
 		}
 
 		int l = 0;
@@ -225,7 +235,8 @@ uint ReadProvider::init() {
 //				Log.Message("Qlty: %s", read->qlty);
 
 					readCount += 1;
-					if (estimate && (readCount % estimateStepSize) == 0 && readCount < estimateSize) {
+					if (estimate && (readCount % estimateStepSize) == 0
+							&& readCount < estimateSize) {
 						ulong mutateFrom;
 						ulong mutateTo;
 						if (isPaired && (readCount & 1)) {
@@ -238,16 +249,24 @@ uint ReadProvider::init() {
 							mutateTo = 0x1;
 						}
 						m_CurrentReadLength = read->length;
-						Log.Verbose("-Iteration");
-						CS::PrefixIteration((char const *) read->Seq, (uint) read->length, fnc, mutateFrom, mutateTo, (void *) this,
-								(uint) 0, (uint) 0);
-						Log.Verbose("-Collect: %s", parser1->read->name.s);
+						CS::PrefixIteration((char const *) read->Seq,
+								read->length, fnc, mutateFrom, mutateTo,
+								(void *) this, (uint) 0, 0);
 						CollectResultsFallback(m_CurrentReadLength);
 					} else if (readCount == (estimateSize + 1)) {
 						if ((maxLen - minLen) < 10 && !Config.Exists(ARGOS)) {
 							finish = true;
 						} else {
-							Log.Warning("Reads don't have the same length. Determining max. read length now.");
+							if (Config.GetInt(RLENGTH_CHECK)) {
+								Log.Warning("Input reads don't have the same length!");
+								Log.Warning("Parameter 'force-rlength-check' found. Determining max. read length now. This might take some time!");
+							} else {
+								Log.Warning("Input reads don't have the same length!");
+								Log.Warning("Maximum read length found in the first %d reads is %d. For longer reads only the first %d bp will be mapped.", estimateSize, maxLen, (int) (maxLen * 1.1f));
+								maxLen = maxLen * 1.1f;
+								Log.Warning("The maximum read length can be overwritten with the '--max-read-length' parameter. With '--force-rlength-check', NextGenMap will run through all reads to find the max. read length. This might take some time.");
+								finish = true;
+							}
 						}
 					}
 				}
@@ -266,6 +285,10 @@ uint ReadProvider::init() {
 			Log.Error("No reads found in input file.");
 			Fatal();
 		}
+		if (Config.GetInt(MAX_READ_LENGTH) > 0) {
+			Log.Warning("Max. read length overwritten by user: %d", Config.GetInt(MAX_READ_LENGTH));
+			maxLen = Config.GetInt(MAX_READ_LENGTH);
+		}
 		maxLen = (maxLen | 1) + 1;
 		int avgLen = sumLen / readCount;
 
@@ -273,6 +296,7 @@ uint ReadProvider::init() {
 			Log.Warning("Max. supported read length is 1000bp. All reads longer than 1000bp will be hard clipped in the output.");
 			maxLen = maxReadLength;
 		}
+
 		((_Config*) _config)->Override("qry_max_len", (int) maxLen);
 		((_Config*) _config)->Override("qry_avg_len", (int) avgLen);
 
@@ -289,20 +313,9 @@ uint ReadProvider::init() {
 
 		if (estimate && readCount >= estimateThreshold) {
 			float sum = 0.0f;
-#ifdef _DEBUGRP
-			FILE* ofp;
-			ofp = fopen((std::string(Config.GetString("output")) + std::string(".b")).c_str(), "w");
-#endif
 			for (int i = 0; i < maxHitTableIndex; ++i) {
-				Log.Verbose("%f += %f", sum, maxHitTable[i]);
 				sum += maxHitTable[i];
-#ifdef _DEBUGRP
-				fprintf(ofp, "%f\n", maxHitTableDebug[i]);
-#endif
 			}
-#ifdef _DEBUGRP
-			fclose(ofp);
-#endif
 
 			float m_CsSensitivity = 0.0f;
 			if (!m_EnableBS) {
@@ -315,7 +328,6 @@ uint ReadProvider::init() {
 				float avg = sum / maxHitTableIndex * 1.0f;
 
 				float avgHit = max * avg;
-				Log.Verbose("max: %d, sum: %f, maxHitTableIndex: %d, avg: %f, avgHit: %f", max, sum, maxHitTableIndex, avg, avgHit);
 
 				Log.Message("Average kmer hits pro read: %f", avgHit);
 				Log.Message("Max possible kmer hit: %d", max);
@@ -323,7 +335,32 @@ uint ReadProvider::init() {
 
 				//m_CsSensitivity = (avg / ((max / avgLen))) * 0.90f + 0.05f;
 				m_CsSensitivity = std::min(std::max(0.3f, avg), 0.9f);
+
+				float sensitivityModifier = 0;
+
+				if (Config.GetInt("very_fast") + Config.GetInt("fast")
+						+ Config.GetInt("very_sensitive")
+						+ Config.GetInt("sensitive") > 1) {
+					Log.Error("Sensitivity effort parameters are mutually exclusive. Please use either --very-fast/--fast/--sensitive/--very-sensitive.");
+					Fatal();
+				}
+
+				if (Config.GetInt("very_fast")) {
+					sensitivityModifier = (0.7f) * (1.0f - m_CsSensitivity);
+				} else if (Config.GetInt("fast")) {
+					sensitivityModifier = (0.35f) * (1.0f - m_CsSensitivity);
+				} else if (Config.GetInt("very_sensitive")) {
+					sensitivityModifier = (-0.7f) * m_CsSensitivity;
+				} else if (Config.GetInt("sensitive")) {
+					sensitivityModifier = (-0.35f) * m_CsSensitivity;
+				}
+
 				Log.Green("Estimated sensitivity: %f", m_CsSensitivity);
+
+				if (sensitivityModifier != 0) {
+					m_CsSensitivity += sensitivityModifier;
+					Log.Green("Modified sensitivity: %f (effort parameter)", m_CsSensitivity);
+				}
 
 				if (Config.Exists("sensitivity")) {
 					//float x = Config.GetFloat("sensitivity", 0, 100);
@@ -332,26 +369,8 @@ uint ReadProvider::init() {
 					Log.Warning("Sensitivity threshold overwritten by user. Using %f", m_CsSensitivity);
 				}
 				((_Config*) _config)->Override("sensitivity", m_CsSensitivity);
-			} /*else {
-			 m_CsSensitivity = 0.5f;
-			 if (Config.Exists("sensitivity")) {
-			 m_CsSensitivity = Config.GetFloat("sensitivity", 0, 1);
-			 }
-			 }*/
-
-			//std::sort(lengthTable, lengthTable + lengthTableIndex);
-			//int size = lengthTable[(int) (0.5f * lengthTableIndex) - 1] * 32;
-			//int bits = (int) std::min(20.0, ceil(log2(size)));
-			//Log.Green("Optimale hash table size: %d (%d)", (int)pow(2.0, (double)bits), lengthTable[lengthTableIndex - 1]);
-			//if(Config.Exists("cs_tablen")) {
-			//	bits = Config.GetInt("cs_tablen", 0, 32);
-			//	Log.Warning("SearchTableLength overwritten by user. Using %d bits", (int)pow(2.0, (double)bits));
-			//}
-			//((_Config*) _config)->Override("cs_tablen", bits);
+			}
 			delete[] maxHitTable;
-#ifdef _DEBUGRP
-			delete[] maxHitTableDebug;
-#endif
 		} else {
 			Log.Warning("Not enough reads to estimate parameter");
 		}
@@ -368,7 +387,7 @@ uint ReadProvider::init() {
 			Log.Message("Sensitivity parameter set to 0.5");
 		}
 	}
-	Log.Message("Initializing took %.3fs", tmr.ET());
+	Log.Message("Estimating parameter took %.3fs", tmr.ET());
 
 	parser1 = DetermineParser(fileName1, maxLen);
 	if (fileName2 != 0) {
@@ -432,7 +451,8 @@ MappedRead * ReadProvider::NextRead(IParser * parser, int const id) {
 	return read;
 }
 
-IParser * ReadProvider::DetermineParser(char const * fileName, int const qryMaxLen) {
+IParser * ReadProvider::DetermineParser(char const * fileName,
+		int const qryMaxLen) {
 
 	gzFile fp = gzopen(fileName, "r");
 	if (!fp) {
@@ -446,7 +466,8 @@ IParser * ReadProvider::DetermineParser(char const * fileName, int const qryMaxL
 	}
 
 	int count = 0;
-	for (size_t i = 0; i < 1000 && buffer[i] != '\0' && buffer[i] != '\n'; i++) {
+	for (size_t i = 0; i < 1000 && buffer[i] != '\0' && buffer[i] != '\n';
+			i++) {
 		if (buffer[i] == '\t') {
 			count++;
 		}
@@ -487,7 +508,8 @@ MappedRead * ReadProvider::GenerateSingleRead(int const readid) {
 }
 
 // Sequential (important for pairs!) read generation
-bool ReadProvider::GenerateRead(int const readid1, MappedRead * & read1, int const readid2, MappedRead * & read2) {
+bool ReadProvider::GenerateRead(int const readid1, MappedRead * & read1,
+		int const readid2, MappedRead * & read2) {
 
 	if (isPaired) {
 		static bool const isInterleaved = Config.Exists("qry");
@@ -517,6 +539,7 @@ bool ReadProvider::GenerateRead(int const readid1, MappedRead * & read1, int con
 		} else {
 			Log.Error("Error in input file. Number of reads in input not even. Please check the input or mapped in single-end mode.");
 			Fatal();
+			return false;
 		}
 	} else {
 		read1 = GenerateSingleRead(readid1);
@@ -532,8 +555,6 @@ void ReadProvider::DisposeRead(MappedRead * read) {
 		if (read->Paired->HasFlag(NGMNames::DeletionPending)) // Paired read was marked for deletion
 				{
 			// delete paired and read
-			Log.Verbose("Deleting read %d (%s)", read->ReadId, read->name);
-			Log.Verbose("Deleting read %d (%s)", read->Paired->ReadId, read->Paired->name);
 			delete read->Paired;
 			delete read;
 		} else {
@@ -542,7 +563,6 @@ void ReadProvider::DisposeRead(MappedRead * read) {
 		}
 	} else {
 		// Single mode or no existing pair
-		Log.Verbose("Deleting single read %d (%s)", read->ReadId, read->name);
 		delete read;
 	}
 }

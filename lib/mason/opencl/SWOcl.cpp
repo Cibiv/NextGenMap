@@ -19,17 +19,22 @@
 #include "oclSwScore.h"
 #include "oclEndFreeScore.h"
 
+extern const char oclDefines[];
+extern const char oclSwScore[];
+extern const char oclEndFreeScore[];
+
 using std::stringstream;
 
 long seq_count = 0;
 long overall = 0;
 
-//cl_program SWOcl::clProgram = 0;
-//int SWOcl::programUserCount = 0;
-
 bool usedPinnedMemory = true;
 
-int SWOcl::BatchScore(int const mode, int const batchSize_, char const * const * const refSeqList_, char const * const * const qrySeqList_, float * const results_, void * extData) {
+int SWOcl::BatchScore(int const mode, int const batchSize_,
+		char const * const * const refSeqList_,
+		char const * const * const qrySeqList_,
+		char const * const * const qalSeqList, float * const results_,
+		void * extData) {
 
 	if (batchSize_ <= 0) {
 		Log.Warning("Score for batchSize <= 0");
@@ -117,7 +122,7 @@ int SWOcl::BatchScore(int const mode, int const batchSize_, char const * const *
 
 	cl_mem bsdirection_gpu = 0;
 	static bool const bsMapping = Config.GetInt("bs_mapping") == 1;
-	if (bsMapping) {
+	if (bsMapping || (slamSeq & 0x2)) {
 		if (host->isGPU()) {
 			bsdirection_gpu = host->allocate(CL_MEM_READ_ONLY, batch_size_scoring * sizeof(cl_char));
 		} else {
@@ -134,7 +139,7 @@ int SWOcl::BatchScore(int const mode, int const batchSize_, char const * const *
 	runSwScoreKernel(scoreKernel, batchSize, qrySeqList, refSeqList, (char *) extData, bsdirection_gpu, results_gpu, results);
 
 	clReleaseMemObject(results_gpu);
-	if (bsMapping) {
+	if (bsMapping || (slamSeq & 0x2)) {
 		clReleaseMemObject(bsdirection_gpu);
 	}
 	seq_count += batchSize;
@@ -157,7 +162,8 @@ int SWOcl::BatchScore(int const mode, int const batchSize_, char const * const *
 }
 
 SWOcl::SWOcl(char const * const oclSwScoreSourceCode, char const * const additional_defines, OclHost * phost) :
-		host(phost) {
+		host(phost), bsMapping(Config.GetInt("bs_mapping") == 1), slamSeq(
+		Config.GetInt(SLAM_SEQ)) {
 
 //	Log.Message("HHHHHHHHHHHHHAAAALLLOOO");
 //	if (!host->checkLocalMemory(46000)) {
@@ -199,19 +205,40 @@ SWOcl::SWOcl(char const * const oclSwScoreSourceCode, char const * const additio
 
 	stringstream buildCmd;
 	static bool const bsMapping = Config.GetInt("bs_mapping") == 1;
-	buildCmd << "-D MATRIX_LENGTH=" << (matrix_length * threads_per_block) << " -D interleave_number=" << "256" << " -D threads_per_block="
-			<< threads_per_block << " -D match=" << Config.GetFloat(MATCH_BONUS) << " -D mismatch=" << Config.GetFloat(MISMATCH_PENALTY) * -1.0f
-			<< " -D gap_read=" << Config.GetFloat(GAP_READ_PENALTY) * -1.0f << " -D gap_ref=" << Config.GetFloat(GAP_REF_PENALTY) * -1.0f << " -D matchBS="
-			<< Config.GetFloat(MATCH_BONUS_TT) << " -D mismatchBS=" << Config.GetFloat(MATCH_BONUS_TC) << " -D read_length="
-			<< Config.GetInt("qry_max_len") << " -D ref_length=" << config_ref_size << " -D corridor_length="
-			<< (Config.GetInt("corridor") + 1) << " -D alignment_length=" << alignment_length << " " << additional_defines;
+	buildCmd << "-D MATRIX_LENGTH=" << (matrix_length * threads_per_block)
+			<< " -D interleave_number=" << "256" << " -D threads_per_block="
+			<< threads_per_block << " -D match=" << Config.GetFloat(MATCH_BONUS)
+			<< " -D mismatch=" << Config.GetFloat(MISMATCH_PENALTY) * -1.0f
+			<< " -D gap_read=" << Config.GetFloat(GAP_READ_PENALTY) * -1.0f
+			<< " -D gap_ref=" << Config.GetFloat(GAP_REF_PENALTY) * -1.0f
+			<< " -D read_length=" << Config.GetInt("qry_max_len")
+			<< " -D ref_length=" << config_ref_size << " -D corridor_length="
+			<< (Config.GetInt("corridor") + 1) << " -D alignment_length="
+			<< alignment_length;
+	buildCmd << additional_defines;
 	if (host->isGPU()) {
 		buildCmd << " -D __GPU__";
 	} else {
 		buildCmd << " -D __CPU__";
 	}
+	/* old version
 	if (bsMapping) {
-		buildCmd << " -D __BS__";
+		buildCmd << "-D __BS__";
+	} */
+	if (bsMapping) {
+		buildCmd << " -D __ALT_SCORING__";
+		buildCmd << " -D matchALT=" << Config.GetFloat(MATCH_BONUS_TT)
+				<< " -D mismatchALT=" << Config.GetFloat(MATCH_BONUS_TC);
+		buildCmd << " -D scoresFWD=scoresBsFWD -D scoresREV=scoresBsREV";
+	} else if ((slamSeq & 0x2)) {
+		buildCmd << " -D __ALT_SCORING__";
+		buildCmd << " -D matchALT=" << Config.GetFloat(MATCH_BONUS_TT)
+				<< " -D mismatchALT="
+				<< Config.GetFloat(MATCH_BONUS_TC) * -1.0f;
+		buildCmd << " -D scoresFWD=scoresSlamSeqFWD -D scoresREV=scoresSlamSeqREV";
+	} else {
+		buildCmd << " -D matchALT=0 -D mismatchALT=0";
+		buildCmd << " -D scoresFWD=scores -D scoresREV=scores";
 	}
 
 ////#pragma omp critical
@@ -561,4 +588,3 @@ unsigned int SWOcl::computeScoringBatchSize() {
 		return 2048;
 	}
 }
-

@@ -19,7 +19,9 @@
 
 #include "Timing.h"
 
+
 #include "Debug.h"
+#include "UpdateCheck.h"
 
 #undef module_name
 #define module_name "MAIN"
@@ -104,14 +106,13 @@ int main(int argc, char * argv[]) {
 	try {
 		_config = new _Config(argc, argv); // Parses command line & parameter file
 		_log = &Log;
-		char const * log = 0;
 
 #ifdef DEBUGLOG
 		if (Config.Exists(LOG)) {
-			log = Config.GetString(LOG);
-			Log.Message("Writing debug log to: %s (lvl %d)", log, Config.GetInt(LOG_LVL));
+			Log.Message("Writing debug log to stdout. Please use -o/--output for SAM/BAM output.");
+			//Init checks if first parameter is != 0. Thus "LOG" is passed as a dummy string.
+			_Log::Init("LOG", Config.GetInt(LOG_LVL)); // Inits logging to file
 		}
-		_Log::Init(log, Config.GetInt(LOG_LVL)); // Inits logging to file
 #else
 				_Log::Init(0, 0); // Inits logging to file
 #endif
@@ -119,10 +120,13 @@ int main(int argc, char * argv[]) {
 		Help();
 	}
 
-	Log.setColor(Config.Exists("color"));
+	if( Config.GetInt("update_check") )
+	{
+		UpdateCheckInterface::remoteCheck();
+		exit(0);
+	}
 
-	if (Config.Exists("master_cpu"))
-		NGMSetThreadAffinity(0, Config.GetInt("master_cpu"));
+	Log.setColor(Config.Exists("color"));
 
 	if (!Config.Exists("qry") || CheckOutput()) {
 		NGM; // Init Core
@@ -134,7 +138,7 @@ int main(int argc, char * argv[]) {
 			Log.Message("No qry file specified. If you want to map single-end data use -q/--qry. If you want to map paired-end data, either use -q/--qry and -p or --qry1 and --qry2.");
 		} else {
 			try {
-				Log.Message("Core initialization complete");
+				Log.Verbose("Core initialization complete");
 				NGM.StartThreads();
 
 				NGM.MainLoop();
@@ -158,6 +162,10 @@ int main(int argc, char * argv[]) {
 			}
 		}
 	}
+
+	if( ! Config.GetInt("update_check") )
+		UpdateCheckInterface::reminder();
+
 	CS::Cleanup();
 	_SequenceProvider::Cleanup();
 	delete _config;
@@ -196,6 +204,10 @@ Input:\n\
                                (default: 0)\n\
  -X/--max-insert-size          The max insert size for paired end alignments\n\
                                (default: 1000)\n\
+ --max-read-length <int>       Length of longest read in input.\n\
+                               (default: estimated from data)\n\
+ --force-rlength-check         Forces NextgenMap to run through all reads to\n\
+                               find the max. read length. (default: off)\n\
 \n\
 Output:\n\
 \n\
@@ -241,6 +253,11 @@ General:\n\n\
                                Higher values will reduce the runtime but also\n\
                                have a negative effect on mapping sensitivity.\n\
                                (default: estimated from input data)\n\
+ --very-fast                   Scale estimated sensitivity: Much faster, much less accurate\n\
+ --fast                        Scale estimated sensitivity: Faster, less accurate\n\
+ --sensitive                   Scale estimated sensitivity: More accurate, slower\n\
+ --very-sensitive              Scale estimated sensitivity: Much more accurate, much slower\n\n\
+ \
  -i/--min-identity <0-1>       All reads mapped with an identity lower than\n\
                                this threshold will be reported as unmapped\n\
                                (default: 0.65)\n\
@@ -308,6 +325,12 @@ Advanced settings:\n\
                                (default: 20, affine: 3, bs-mapping: 10)\n\
  --match-bonus-tt <int>        Only for bs-mapping (default: 4)\n\
  --match-bonus-tc <int>        Only for bs-mapping (default: 4)\n\
+ --bin-size <n>                Sets the size of the grid NextgenMap uses\n\
+                               during CMR search to: 2^n (default: 2) \n\
+\n\
+Other:\n\
+\n\
+ --update-check                Perform an online check for a newer version of NGM\n\
  --color                       Colored text output (default: off)\n\
  --no-progress                 Don't print progress info while mapping\n\
                                (default: off)\n\
@@ -318,7 +341,7 @@ Advanced settings:\n\
 }
 
 // actually platform specific.../care
-ulong const FileSize(char const * const filename) {
+uloc const FileSize(char const * const filename) {
 	FILE * fp = fopen(filename, "rb");
 	if (fp == 0) {
 		Log.Warning("Tried to get size of nonexistent file %s", filename);
@@ -328,7 +351,12 @@ ulong const FileSize(char const * const filename) {
 	if (fseek(fp, 0, SEEK_END) != 0)
 		return 0;
 
-	ulong end = ftell(fp);
+#ifdef __APPLE__
+	uloc end = ftello(fp);
+#else
+	uloc end = ftello64(fp);
+#endif
+
 	fclose(fp);
 	return end;
 }

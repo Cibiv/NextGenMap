@@ -43,7 +43,7 @@ using std::string;
 #define OUT_OF_DATE         "OUT_OF_DATE"
 
 #define UPDATE_HOST_DEFAULT "www.cibiv.at"
-#define UPDATE_PATH_DEFAULT "/~moritz/ngmversion.php"
+#define UPDATE_PATH_DEFAULT "/software/ngm/version.php"
 
 #define UPDATE_REMIND_AFTER_MONTHS 6
 
@@ -266,7 +266,7 @@ struct tm GetBuildTime()
 	struct tm tm_build;
 	memset( (void*) &tm_build, 0, sizeof(tm_build) );
 
-	string build_stamp( "Mar  4 2014" ); //Apr  4 2014
+	string build_stamp( __DATE__ ); //Apr  4 2014
 
 
 	vector<string> parts;
@@ -338,7 +338,7 @@ void UpdateCheckInterface::reminder()
 
 		if( months_now - months_build > UPDATE_REMIND_AFTER_MONTHS )
 		{
-			Log.Message("[UPDATE_CHECK] Your version of NGM is more than %d months old, please use --update-check - a newer version may be available",UPDATE_REMIND_AFTER_MONTHS);
+			Log.Message("[UPDATE_CHECK] Your version of NGM is more than %d months old - a newer version may be available. (For performing an automatic check use --update-check)",UPDATE_REMIND_AFTER_MONTHS);
 		}
 
 	} catch( UpdateCheckException ex ) {

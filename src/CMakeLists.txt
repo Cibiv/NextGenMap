@@ -18,7 +18,8 @@ configure_file( Version.h.in ${CMAKE_SOURCE_DIR}/src/Version.h )
 
 add_executable(ngm-core 	
 					parser/BamParser.cpp
-					writer/BAMWriter.cpp																	
+					writer/BAMWriter.cpp
+					parser/VcfParser.cpp																	
 					config/Config.cpp					
 					CS.cpp					
 					CSstatic.cpp
@@ -27,7 +28,7 @@ add_executable(ngm-core
 					MappedRead.cpp
 					NGM_main.cpp
 					NGM.cpp
-					core/NGMStats.cpp
+					UpdateCheck.cpp
 					core/NGMTask.cpp
 					AlignmentBuffer.cpp
 					PrefixTable.cpp														
@@ -52,13 +53,15 @@ target_link_libraries(ngm-core pthread)
 target_link_libraries(ngm-core MASonOpenCl)	
 TARGET_LINK_LIBRARIES(ngm-core BamTools-static)
 TARGET_LINK_LIBRARIES(ngm-core zlibstatic)
+#target_link_libraries(ngm-core "-lz")
 	
 add_definitions(-D _BAM) 
 
 
 add_executable(ngm-core-debug	
 					parser/BamParser.cpp
-					writer/BAMWriter.cpp																	
+					writer/BAMWriter.cpp
+					parser/VcfParser.cpp																		
 					config/Config.cpp					
 					CS.cpp					
 					CSstatic.cpp
@@ -67,7 +70,7 @@ add_executable(ngm-core-debug
 					MappedRead.cpp
 					NGM_main.cpp
 					NGM.cpp
-					core/NGMStats.cpp
+					UpdateCheck.cpp
 					core/NGMTask.cpp
 					AlignmentBuffer.cpp
 					PrefixTable.cpp														
@@ -94,4 +97,5 @@ target_link_libraries(ngm-core-debug pthread)
 target_link_libraries(ngm-core-debug MASonOpenCl-debug)	
 TARGET_LINK_LIBRARIES(ngm-core-debug BamTools-static)
 TARGET_LINK_LIBRARIES(ngm-core-debug zlibstatic)
+#target_link_libraries(ngm-core-debug "-lz")
 

@@ -34,8 +34,8 @@ private:
 
 	float const pairScoreCutoff;
 
-	int const maxTopScores;
-	bool const topScoresOnly;
+	int const topN;
+	bool const strata;
 	bool const isPaired;
 	bool const fastPairing;
 
@@ -63,11 +63,12 @@ private:
 	float* m_ScoreBuffer;
 
 	int qryMaxLen;
-	int refMaxLen;
+	uloc refMaxLen;
 
 	int corridor;
 	char * m_DirBuffer;
-	bool m_EnableBS;
+	bool const m_EnableBS;
+	int const slamSeq;
 
 	Score * scores;
 	int iScores;
@@ -86,9 +87,10 @@ public:
 	static ulong scoreCount;
 
 	ScoreBuffer(IAlignment * mAligner, AlignmentBuffer * mOut) :
-			m_AlignMode(Config.GetInt(MODE, 0, 1)), pairDistCount(1), pairDistSum(0), brokenPairs(0), pairScoreCutoff(Config.GetFloat("pair_score_cutoff")), maxTopScores(Config.GetInt("topn")), topScoresOnly(
+			m_AlignMode(Config.GetInt(MODE, 0, 1)), pairDistCount(1), pairDistSum(0), brokenPairs(0), pairScoreCutoff(Config.GetFloat("pair_score_cutoff")), topN(Config.GetInt("topn")), strata(
 					Config.GetInt("strata")), isPaired(Config.GetInt("paired") != 0), fastPairing(Config.GetInt("fast_pairing") == 1), aligner(
-					mAligner), out(mOut), swBatchSize(aligner->GetScoreBatchSize()), argos(Config.Exists(ARGOS)), argosMinScore(Config.GetFloat(ARGOS_MINSCORE)) {
+					mAligner), out(mOut), swBatchSize(aligner->GetScoreBatchSize()), m_EnableBS(Config.GetInt("bs_mapping", 0, 1) == 1), slamSeq(
+					Config.GetInt(SLAM_SEQ)), argos(Config.Exists(ARGOS)), argosMinScore(Config.GetFloat(ARGOS_MINSCORE)) {
 
 		m_QryBuffer = 0;
 		m_RefBuffer = 0;
@@ -102,9 +104,9 @@ public:
 
 		m_DirBuffer = new char[swBatchSize];
 
-		m_EnableBS = false;
+		//m_EnableBS = false;
 		//	if (Config.Exists("bs_mapping"))
-		m_EnableBS = (Config.GetInt("bs_mapping", 0, 1) == 1);
+		//m_EnableBS = (Config.GetInt("bs_mapping", 0, 1) == 1);
 
 		qryMaxLen = Config.GetInt("qry_max_len");
 		refMaxLen = ((qryMaxLen + Config.GetInt("corridor")) | 1) + 1;

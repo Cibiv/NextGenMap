@@ -12,9 +12,8 @@
 #undef module_name
 #define module_name "CS"
 
-static const int cInvalidLocation = -99999999;
-static const SequenceLocation sInvalidLocation(cInvalidLocation, 0, false);
-
+//static const int cInvalidLocation = -99999999;
+static const SequenceLocation sInvalidLocation(9223372036854775808u, 0, false);
 
 volatile int CS::s_ThreadCount = 0;
 
@@ -31,13 +30,15 @@ uint const cPrefixBaseSkip = 0;
 float const cOverflowThresh = 0.1f;
 float const cOverflowLimit = 10;
 
-
-void CS::PrefixIteration(char const * sequence, uint length, PrefixIterationFn func, ulong mutateFrom, ulong mutateTo, void* data, uint prefixskip, uint offset, int prefixBaseCount) {
+void CS::PrefixIteration(char const * sequence, uloc length,
+		PrefixIterationFn func, ulong mutateFrom, ulong mutateTo, void* data,
+		uint prefixskip, uloc offset, int prefixBaseCount) {
 	prefixBasecount = prefixBaseCount;
 	prefixBits = prefixBasecount * 2;
 	prefixMask = ((ulong) 1 << prefixBits) - 1;
 
-	CS::PrefixIteration(sequence, length, func, mutateFrom, mutateTo, data, prefixskip, offset);
+	CS::PrefixIteration(sequence, length, func, mutateFrom, mutateTo, data,
+			prefixskip, offset);
 
 	prefixBasecount = Config.GetInt("kmer", 4, 32);
 	prefixBits = prefixBasecount * 2;
@@ -50,8 +51,10 @@ void CS::PrefixIteration(char const * sequence, uint length, PrefixIterationFn f
 //ulong mutateFrom = 0x2;
 //ulong mutateTo = 0x1;
 
-void CS::PrefixMutateSearch(ulong prefix, uint pos, ulong mutateFrom, ulong mutateTo, void* data) {
+void CS::PrefixMutateSearch(ulong prefix, uloc pos, ulong mutateFrom,
+		ulong mutateTo, void* data) {
 	static int const cMutationLocLimit = Config.GetInt("bs_cutoff");
+	static bool const slamSeq = Config.GetInt(SLAM_SEQ) & 0x4;
 	ulong const mask = 0x3;
 
 	int mutationLocs = 0;
@@ -61,11 +64,38 @@ void CS::PrefixMutateSearch(ulong prefix, uint pos, ulong mutateFrom, ulong muta
 			++mutationLocs;
 	}
 
-	if (mutationLocs <= cMutationLocLimit)
-		PrefixMutateSearchEx(prefix, pos, mutateFrom, mutateTo, data);
+	Log.Verbose("Qry Seq %i - Prefix 0x%x -> %d k-mers", cs->m_CurrentSeq, prefix, mutationLocs + 1);
+
+	if (slamSeq) {
+		CS * cs = (CS*) data;
+		cs->m_CurrentMutLocs = 1;
+		PrefixSearch(prefix, pos, mutateFrom, mutateTo, data);
+		cs->m_CurrentMutLocs = mutationLocs + 1;
+		PrefixMutateSearchSlamSeq(prefix, pos, mutateFrom, mutateTo, data);
+	} else {
+		if (mutationLocs <= cMutationLocLimit) {
+			PrefixMutateSearchEx(prefix, pos, mutateFrom, mutateTo, data);
+		}
+	}
 }
 
-void CS::PrefixMutateSearchEx(ulong prefix, uint pos, ulong mutateFrom, ulong mutateTo, void* data, int mpos) {
+void CS::PrefixMutateSearchSlamSeq(ulong prefix, uloc pos, ulong mutateFrom,
+		ulong mutateTo, void* data, int mpos) {
+
+	ulong const mask = 0x3;
+	for (int i = mpos; i < (int) prefixBasecount; ++i) {
+		ulong cur = mask & (prefix >> (i * 2));
+
+		if (cur == mutateFrom) {
+			ulong p1 = (prefix & ~(mask << (i * 2)));
+			ulong p2 = (mutateTo << (i * 2));
+			PrefixSearch(p1 | p2, pos, mutateFrom, mutateTo, data);
+		}
+	}
+}
+
+void CS::PrefixMutateSearchEx(ulong prefix, uloc pos, ulong mutateFrom,
+		ulong mutateTo, void* data, int mpos) {
 	PrefixSearch(prefix, pos, mutateFrom, mutateTo, data);
 
 	ulong const mask = 0x3;
@@ -75,53 +105,73 @@ void CS::PrefixMutateSearchEx(ulong prefix, uint pos, ulong mutateFrom, ulong mu
 		if (cur == mutateFrom) {
 			ulong p1 = (prefix & ~(mask << (i * 2)));
 			ulong p2 = (mutateTo << (i * 2));
-			PrefixMutateSearchEx(p1 | p2, pos, mutateFrom, mutateTo, data, i + 1);
+			PrefixMutateSearchEx(p1 | p2, pos, mutateFrom, mutateTo, data,
+					i + 1);
 		}
 	}
 }
 
-void CS::PrefixSearch(ulong prefix, uint pos, ulong mutateFrom, ulong mutateTo, void* data) {
+void CS::PrefixSearch(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo,
+		void* data) {
+	static bool const slamSeq = Config.GetInt(SLAM_SEQ) & 0x4;
 	CS * cs = (CS*) data;
 
-	RefEntry const * cur = cs->m_RefProvider->GetRefEntry(prefix, cs->m_entry); // Liefert eine liste aller Vorkommen dieses Praefixes in der Referenz
+	RefEntry const * entries = cs->m_RefProvider->GetRefEntry(prefix,
+			cs->m_entry); // Liefert eine liste aller Vorkommen dieses Praefixes in der Referenz
+	RefEntry const * cur = entries;
+	if (cur != 0 && cur->refTotal < cs->maxPrefixFreq) {
 
-	int const readLength = cs->m_CurrentReadLength;
 
-	if (cur != 0 && cur->refTotal == 0) {
-		kCount += 1;
-	}
+		int const readLength = cs->m_CurrentReadLength;
 
-	while (cur != 0) {
-		//Get kmer-weight.
-		//float weight = cur->weight / 100.0f;
-		//cs->weightSum += cur->weight;
-		float weight = 1.0f;
+		if (cur != 0 && cur->refTotal == 0) {
+			kCount += 1;
+		}
 
-		uint correction = (cur->reverse) ? (readLength - (pos + CS::prefixBasecount)) : pos;
+		for (int i = 0; i < cs->m_entryCount; i++) {
+			//Get kmer-weight.
+			//float weight = cur->weight / 100.0f;
+			//cs->weightSum += cur->weight;
+			float weight = 1.0f;
+			if (slamSeq) {
+				weight = 1.0f / cs->m_CurrentMutLocs;
+			}
+
+			uloc correction =
+					(cur->reverse) ?
+							(readLength - (pos + CS::prefixBasecount)) : pos;
 
 //#ifdef _DEBUGCSVERBOSE
 //		Log.Message("Qry Seq %i - Prefix 0x%x got %i locs (sum %i)", cs->m_CurrentSeq, prefix, cur->refTotal);
 //#endif
 
-		int const n = cur->refCount;
-		for (int i = 0; i < n; ++i) {
-			cs->AddLocationStd(cs->GetBin(cur->ref[i].m_Location - correction), cur->reverse, weight);
-		}
+			int const n = cur->refCount;
 
-		cur = cur->nextEntry;
+			for (int i = 0; i < n; ++i) {
+				uloc loc = cur->getRealLocation(cur->ref[i]);
+				cs->AddLocationStd(GetBin(loc - correction), cur->reverse,
+						weight);
+				Log.Verbose("Qry Seq %i - Prefix 0x%x pos %llu weight %f", cs->m_CurrentSeq, prefix, GetBin(loc - correction), weight);
+			}
+
+			cur++;
+		}
 	}
 }
 
-void CS::AddLocationStd(uint const m_Location, bool const reverse, double const freq) {
-	uint hpoc = c_SrchTableLen;
-	uint l = (uint) c_SrchTableLen;
+void CS::AddLocationStd(uloc const m_Location, bool const reverse,
+		double const freq) {
 	bool newEntry = false;
 
-	uint hpo = Hash(m_Location);
-	while ((newEntry = (rTable[hpo].state & 0x7FFFFFFF) == currentState) && !(rTable[hpo].m_Location == m_Location)) {
-		++hpo;
-		if (hpo >= l)
-			hpo = 0;
+	CSTableEntry* entry = rTable + Hash(m_Location);
+	CSTableEntry* const maxEntry = rTable + c_SrchTableLen;
+
+	//uint hpo = Hash( m_Location );
+	while ((newEntry = (entry->state & 0x7FFFFFFF) == currentState)
+			&& !(entry->m_Location == m_Location)) {
+		++entry;
+		if (entry >= maxEntry)
+			entry = rTable;
 		if (--hpoc == 0) {
 			throw 1;
 		}
@@ -129,21 +179,21 @@ void CS::AddLocationStd(uint const m_Location, bool const reverse, double const 
 
 	float score = freq;
 	if (!newEntry) {
-		rTable[hpo].m_Location = m_Location;
-		rTable[hpo].state = currentState & 0x7FFFFFFF;
+		entry->m_Location = m_Location;
+		entry->state = currentState & 0x7FFFFFFF;
 		if (reverse) {
-			rTable[hpo].fScore = 0.0f;
-			rTable[hpo].rScore = score;
+			entry->fScore = 0.0f;
+			entry->rScore = score;
 		} else {
-			rTable[hpo].fScore = score;
-			rTable[hpo].rScore = 0.0f;
+			entry->fScore = score;
+			entry->rScore = 0.0f;
 		}
 	} else {
 		//Add kmer-weight to position
 		if (reverse) {
-			score = (rTable[hpo].rScore += freq);
+			score = (entry->rScore += freq);
 		} else {
-			score = (rTable[hpo].fScore += freq);
+			score = (entry->fScore += freq);
 		}
 	}
 
@@ -155,9 +205,9 @@ void CS::AddLocationStd(uint const m_Location, bool const reverse, double const 
 	}
 
 	//If kmer-weight larger than threshold -> add to rList.
-	if (!(rTable[hpo].state & 0x80000000) && score >= currentThresh) {
-		rTable[hpo].state |= 0x80000000;
-		rList[rListLength++] = hpo;
+	if (!(entry->state & 0x80000000) && score >= currentThresh) {
+		entry->state |= 0x80000000;
+		rList[rListLength++] = entry - rTable;
 	}
 
 }
@@ -186,20 +236,20 @@ void CS::debugCS(MappedRead * read, int& n, float& mi_Threshhold) {
 
 			int refNameLength = 0;
 			if (rTable[i].fScore > 0.0f) {
-				if(rTable[i].fScore >= mi_Threshhold) {
-					Log.Debug(8192, "READ_%d\tCS_RESULTS\tInternal location: %u (+), Location: %u (Ref: %s), Score: %f (ACCEPT)", read->ReadId, rTable[i].m_Location, loc.m_Location, SequenceProvider.GetRefName(loc.getrefId(), refNameLength), rTable[i].fScore);
+				if (rTable[i].fScore >= mi_Threshhold) {
+					Log.Debug(8192, "READ_%d\tCS_RESULTS\tInternal location: %llu (+), Location: %llu (Ref: %s), Score: %f (ACCEPT)", read->ReadId, rTable[i].m_Location, loc.m_Location, SequenceProvider.GetRefName(loc.getrefId(), refNameLength), rTable[i].fScore);
 					accepted += 1;
 				} else {
-					Log.Debug(4096, "READ_%d\tCS_DETAILS\tInternal location: %u (+), Location: %u (Ref: %s), Score: %f (REJECT)", read->ReadId, rTable[i].m_Location, loc.m_Location, SequenceProvider.GetRefName(loc.getrefId(), refNameLength), rTable[i].fScore);
+					Log.Debug(4096, "READ_%d\tCS_DETAILS\tInternal location: %llu (+), Location: %llu (Ref: %s), Score: %f (REJECT)", read->ReadId, rTable[i].m_Location, loc.m_Location, SequenceProvider.GetRefName(loc.getrefId(), refNameLength), rTable[i].fScore);
 				}
 				count += 1;
 			}
 			if (rTable[i].rScore > 0.0f) {
-				if(rTable[i].rScore >= mi_Threshhold) {
-					Log.Debug(8192, "READ_%d\tCS_RESULTS\tInternal location: %u (-), Location: %u (Ref: %s), Score: %f (ACCEPT)", read->ReadId, rTable[i].m_Location, loc.m_Location, SequenceProvider.GetRefName(loc.getrefId(), refNameLength), rTable[i].rScore);
+				if (rTable[i].rScore >= mi_Threshhold) {
+					Log.Debug(8192, "READ_%d\tCS_RESULTS\tInternal location: %llu (-), Location: %llu (Ref: %s), Score: %f (ACCEPT)", read->ReadId, rTable[i].m_Location, loc.m_Location, SequenceProvider.GetRefName(loc.getrefId(), refNameLength), rTable[i].rScore);
 					accepted += 1;
 				} else {
-					Log.Debug(4096, "READ_%d\tCS_DETAILS\tInternal location: %u (-), Location: %u (Ref: %s), Score: %f (REJECT)", read->ReadId, rTable[i].m_Location, loc.m_Location, SequenceProvider.GetRefName(loc.getrefId(), refNameLength), rTable[i].rScore);
+					Log.Debug(4096, "READ_%d\tCS_DETAILS\tInternal location: %llu (-), Location: %llu (Ref: %s), Score: %f (REJECT)", read->ReadId, rTable[i].m_Location, loc.m_Location, SequenceProvider.GetRefName(loc.getrefId(), refNameLength), rTable[i].rScore);
 				}
 				count += 1;
 			}
@@ -267,7 +317,8 @@ int CS::CollectResultsFallback(MappedRead * read) {
 	return 0;
 }
 
-void CS::SendToBuffer(MappedRead * read, ScoreBuffer * sw, AlignmentBuffer * out) {
+void CS::SendToBuffer(MappedRead * read, ScoreBuffer * sw,
+		AlignmentBuffer * out) {
 	if (read == 0)
 		return;
 
@@ -289,7 +340,7 @@ void CS::Cleanup() {
 
 int CS::RunBatch(ScoreBuffer * sw, AlignmentBuffer * out) {
 	PrefixIterationFn pFunc = &CS::PrefixSearch;
-	if (m_EnableBS)
+	if (m_EnableBS || m_EnableSlamSeq)
 		pFunc = &CS::PrefixMutateSearch;
 
 	int nScoresSum = 0;
@@ -298,7 +349,8 @@ int CS::RunBatch(ScoreBuffer * sw, AlignmentBuffer * out) {
 
 		m_CurrentSeq = m_CurrentBatch[i]->ReadId;
 
-		currentState = 2 * i;
+		//currentState = 2 * i;
+		currentState++;
 		rListLength = 0;
 		maxHitNumber = 0.0f;
 		currentThresh = 0.0f;
@@ -310,12 +362,22 @@ int CS::RunBatch(ScoreBuffer * sw, AlignmentBuffer * out) {
 		static bool const isPaired = Config.GetInt("paired") > 0;
 		if (isPaired && (m_CurrentBatch[i]->ReadId & 1)) {
 			//Second mate
-			mutateFrom = 0x0;
-			mutateTo = 0x3;
+			if (m_EnableSlamSeq) {
+				mutateFrom = 0x3;
+				mutateTo = 0x0;
+			} else {
+				mutateFrom = 0x0;
+				mutateTo = 0x3;
+			}
 		} else {
 			//First mate
-			mutateFrom = 0x2;
-			mutateTo = 0x1;
+			if (m_EnableSlamSeq) {
+				mutateFrom = 0x1;
+				mutateTo = 0x2;
+			} else {
+				mutateFrom = 0x2;
+				mutateTo = 0x1;
+			}
 		}
 
 		m_CurrentReadLength = m_CurrentBatch[i]->length;
@@ -323,15 +385,14 @@ int CS::RunBatch(ScoreBuffer * sw, AlignmentBuffer * out) {
 		++m_ProcessedReads;
 		bool fallback = m_Fallback;
 
-		if (m_CSThreadID < NGMStats::cMaxThreadStats)
-			NGM.Stats->CS[m_CSThreadID].CurrentRead = m_CurrentSeq;
-
 		char const * const qrySeq = m_CurrentBatch[i]->Seq;
-		int qryLen = m_CurrentBatch[i]->length;
+		uloc qryLen = m_CurrentBatch[i]->length;
 
 		if (!fallback) {
 			try {
-				PrefixIteration(qrySeq, qryLen, pFunc, mutateFrom, mutateTo, this, m_PrefixBaseSkip);
+				hpoc = c_SrchTableLen * 0.333f;
+				PrefixIteration(qrySeq, qryLen, pFunc, mutateFrom, mutateTo,
+						this, m_PrefixBaseSkip);
 				nScoresSum += CollectResultsStd(m_CurrentBatch[i]);
 			} catch (int overflow) {
 				++m_Overflows;
@@ -347,16 +408,17 @@ int CS::RunBatch(ScoreBuffer * sw, AlignmentBuffer * out) {
 				fallback = false;
 				try {
 
-					c_SrchTableBitLen = c_SrchTableBitLenBackup + x;
-					c_BitShift = 32 - c_SrchTableBitLen;
-					c_SrchTableLen = (int) pow(2, c_SrchTableBitLen);
+					SetSearchTableBitLen(c_SrchTableBitLenBackup + x);
 
 					rListLength = 0;
-					currentState = 2 * i + 1;
+					//currentState = 2 * i + 1;
+					currentState++;
 					maxHitNumber = 0.0f;
 					currentThresh = 0.0f;
 
-					PrefixIteration(qrySeq, qryLen, pFunc, mutateFrom, mutateTo, this, m_PrefixBaseSkip);
+					hpoc = c_SrchTableLen * 0.777f;
+					PrefixIteration(qrySeq, qryLen, pFunc, mutateFrom, mutateTo,
+							this, m_PrefixBaseSkip);
 					nScoresSum += CollectResultsStd(m_CurrentBatch[i]);
 
 				} catch (int overflow) {
@@ -364,9 +426,7 @@ int CS::RunBatch(ScoreBuffer * sw, AlignmentBuffer * out) {
 					x += 1;
 				}
 			}
-			c_SrchTableBitLen = c_SrchTableBitLenBackup;
-			c_BitShift = 32 - c_SrchTableBitLen;
-			c_SrchTableLen = (int) pow(2, c_SrchTableBitLen);
+			SetSearchTableBitLen(c_SrchTableBitLenBackup);
 		}
 
 		SendToBuffer(m_CurrentBatch[i], sw, out);
@@ -394,7 +454,9 @@ void CS::DoRun() {
 
 	NGM.AquireOutputLock();
 	oclAligner = NGM.CreateAlignment(gpu | (std::min(Config.GetInt("format", 0, 2), 1) << 8));
-	AlignmentBuffer * alignmentBuffer = new AlignmentBuffer(Config.Exists("output") ? Config.GetString("output") : 0, oclAligner);
+	AlignmentBuffer * alignmentBuffer = new AlignmentBuffer(
+			Config.Exists("output") ? Config.GetString("output") : 0,
+			oclAligner);
 	ScoreBuffer * scoreBuffer = new ScoreBuffer(oclAligner, alignmentBuffer);
 	NGM.ReleaseOutputLock();
 
@@ -422,6 +484,7 @@ void CS::DoRun() {
 
 	Timer tmr;
 	m_RefProvider = NGM.GetRefProvider(m_TID);
+	AllocRefEntryChain();
 	while (NGM.ThreadActive(m_TID, GetStage()) && ((m_CurrentBatch = NGM.GetNextReadBatch(m_BatchSize)), (m_CurrentBatch.size() > 0))) {
 		Log.Debug(LOG_CS_DETAILS, "CS Thread %i got batch (len %i)", m_TID, m_CurrentBatch.size());
 		tmr.ST();
@@ -444,14 +507,10 @@ void CS::DoRun() {
 
 		if (!Config.Exists("search_table_length")) {
 			if (m_Overflows <= 5 && !up && c_SrchTableBitLen > 8) {
-				c_SrchTableBitLen -= 1;
-				c_BitShift = 32 - c_SrchTableBitLen;
-				c_SrchTableLen = (int) pow(2, c_SrchTableBitLen);
+				SetSearchTableBitLen( c_SrchTableBitLen - 1 );
 				Log.Debug(LOG_CS_DETAILS, "Overflow: Switching to %d bits (%d, %d)", c_SrchTableBitLen, c_BitShift, c_SrchTableLen);
 			} else if (m_Overflows > m_BatchSize * 0.01f) {
-				c_SrchTableBitLen += 1;
-				c_BitShift = 32 - c_SrchTableBitLen;
-				c_SrchTableLen = (int) pow(2, c_SrchTableBitLen);
+				SetSearchTableBitLen( c_SrchTableBitLen + 1 );
 				up = true;
 				Log.Debug(LOG_CS_DETAILS, "Overflow: Switching to %d bits (%d, %d)", c_SrchTableBitLen, c_BitShift, c_SrchTableLen);
 			}
@@ -459,8 +518,10 @@ void CS::DoRun() {
 		m_Overflows = 0;
 	}
 
-	delete scoreBuffer; scoreBuffer = 0;
-	delete alignmentBuffer; alignmentBuffer = 0;
+	delete scoreBuffer;
+	scoreBuffer = 0;
+	delete alignmentBuffer;
+	alignmentBuffer = 0;
 	NGM.DeleteAlignment(oclAligner);
 	Log.Debug(LOG_CS_DETAILS, "CS Thread %i finished (%i reads processed, %i reads written, %i reads discarded)", m_TID, m_ProcessedReads, m_WrittenReads, m_DiscardedReads);
 }
@@ -471,22 +532,31 @@ void CS::Init() {
 
 	bool m_EnableBS = (Config.GetInt("bs_mapping", 0, 1) == 1);
 	if (m_EnableBS) {
-		static int const cMutationLocLimit = Config.Exists("bs_cutoff") ? Config.GetInt("bs_cutoff") : 6;
+		static int const cMutationLocLimit =
+				Config.Exists("bs_cutoff") ? Config.GetInt("bs_cutoff") : 6;
 		Log.Message("BS mapping enabled. Max. number of A/T per k-mer set to %d", cMutationLocLimit);
 	}
 }
 
 CS::CS(bool useBuffer) :
-		m_CSThreadID((useBuffer) ? (AtomicInc(&s_ThreadCount) - 1) : -1), m_BatchSize(cBatchSize / Config.GetInt("qry_avg_len")), m_ProcessedReads(
-				0), m_WrittenReads(0), m_DiscardedReads(0), m_EnableBS(false), m_Overflows(0), m_entry(new RefEntry(0)), c_SrchTableBitLen(
-				Config.Exists("search_table_length") ? Config.GetInt("search_table_length") : 16), c_BitShift(32 - c_SrchTableBitLen), c_SrchTableLen(
-				(int) pow(2, c_SrchTableBitLen)), m_PrefixBaseSkip(0), m_Fallback((c_SrchTableLen <= 0)) // cTableLen <= 0 means always use fallback
+		m_CSThreadID((useBuffer) ? (AtomicInc(&s_ThreadCount) - 1) : -1), m_BatchSize(
+				cBatchSize / Config.GetInt("qry_avg_len")), m_ProcessedReads(0), m_WrittenReads(
+				0), m_DiscardedReads(0), m_EnableBS(false), m_EnableSlamSeq(
+				false), m_Overflows(0), m_entry(0), m_PrefixBaseSkip(0), m_Fallback(
+				false) // cTableLen <= 0 means always use fallback
 {
 
+	SetSearchTableBitLen(
+			Config.Exists("search_table_length") ?
+					Config.GetInt("search_table_length") : 16);
+
 	m_EnableBS = (Config.GetInt("bs_mapping", 0, 1) == 1);
+	m_EnableSlamSeq = Config.GetInt(SLAM_SEQ) & 0x4;
 
 	if (m_EnableBS) {
-		m_PrefixBaseSkip = (Config.Exists("kmer_skip")) ? Config.GetInt("kmer_skip", 0, -1) : cPrefixBaseSkip;
+		m_PrefixBaseSkip =
+				(Config.Exists("kmer_skip")) ?
+						Config.GetInt("kmer_skip", 0, -1) : cPrefixBaseSkip;
 	}
 
 	rTable = 0;
@@ -497,11 +567,16 @@ CS::CS(bool useBuffer) :
 	ofp2 = fopen("cs-results.txt", "w");
 #endif
 
+	maxPrefixFreq = Config.GetInt(MAX_KFREQ);
+
 	currentState = 0;
-	m_entry->nextEntry = new RefEntry(0);
 	tmpSize = 10000;
 	tmp = new LocationScore[tmpSize];
+}
 
+void CS::AllocRefEntryChain() {
+	m_entryCount = m_RefProvider->GetRefEntryChainLength();
+	m_entry = new RefEntry[m_entryCount];
 }
 
 CS::~CS() {
@@ -518,10 +593,13 @@ CS::~CS() {
 	if (rList != 0) {
 		delete[] rList;
 	}
-}
 
+	if (m_entry != 0) {
+		delete[] m_entry;
+		m_entry = 0;
+	}
+}
 
 void CS::CheckFallback() {
 
 }
-

@@ -34,20 +34,25 @@ ILog const * _log = 0;
 IConfig * _config = 0;
 
 // actually platform specific.../care
-ulong const FileSize(char const * const filename) {
+uloc const FileSize(char const * const filename) {
 	FILE * fp = fopen(filename, "rb");
 	if (fp == 0) {
-		Log.Warning("Tried to get size of nonexistant file %s", filename);
+		Log.Warning("Tried to get size of nonexistent file %s", filename);
 		return 0;
 	}
 
 	if (fseek(fp, 0, SEEK_END) != 0)
 		return 0;
 
-	ulong end = ftell(fp);
+#ifdef __APPLE__
+	uloc end = ftello(fp);
+#else
+	uloc end = ftello64(fp);
+#endif
 	fclose(fp);
 	return end;
 }
+
 
 int main(int argc, char **argv) {
 

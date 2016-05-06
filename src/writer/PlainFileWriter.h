@@ -43,10 +43,11 @@ public:
 	void doFlush(int & bufferPosition, int const BUFFER_LIMIT, char * writeBuffer, bool last = false) {
 
 		if (bufferPosition > BUFFER_LIMIT || last) {
-			if (fwrite_unlocked(writeBuffer, sizeof(char), bufferPosition, m_Output) < 0) {
-				Log.Error("Writing");
-				Fatal();
-			}
+#ifdef __APPLE__
+			fwrite(writeBuffer, sizeof(char), bufferPosition, m_Output);
+#else
+			fwrite_unlocked(writeBuffer, sizeof(char), bufferPosition, m_Output);
+#endif
 			bufferPosition = 0;
 
 		}

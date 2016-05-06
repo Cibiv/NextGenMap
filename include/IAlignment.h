@@ -1,6 +1,15 @@
 #ifndef __IALIGNMENT_H__
 #define __IALIGNMENT_H__
 
+struct AlignmentPosition {
+	AlignmentPosition() :
+			type(-1), readPosition(0), match(true) {
+	}
+	int type;
+	int readPosition;
+	bool match;
+};
+
 struct Align {
 	Align() :
 			pBuffer1(0), pBuffer2(0), ExtendedData(0), PositionOffset(0), QStart(
@@ -37,17 +46,24 @@ static int const cCookie = 0x10201130;
  */
 class IAlignment {
 public:
+
+	virtual ~IAlignment() {
+	}
+	;
+
 	virtual int GetScoreBatchSize() const = 0;
 	virtual int GetAlignBatchSize() const = 0;
 
 	virtual int BatchScore(int const mode, int const batchSize,
 			char const * const * const refSeqList,
-			char const * const * const qrySeqList, float * const results,
+			char const * const * const qrySeqList,
+			char const * const * const qalSeqList, float * const results,
 			void * extData) = 0;
 
 	virtual int BatchAlign(int const mode, int const batchSize,
 			char const * const * const refSeqList,
-			char const * const * const qrySeqList, Align * const results,
+			char const * const * const qrySeqList,
+			char const * const * const qalSeqList, Align * const results,
 			void * extData) = 0;
 };
 

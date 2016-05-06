@@ -20,7 +20,6 @@
 #include "SequenceProvider.h"
 #include "CS.h"
 
-
 using std::cout;
 using std::endl;
 using std::map;
@@ -44,13 +43,14 @@ IRefProvider * m_RefProvider = 0;
 FILE * ofp;
 
 RefEntry * m_entry = 0;
+uint m_entryCount = 0;
 
-void CountKmer(ulong prefix, uint pos, ulong mutateFrom, ulong mutateTo, void* data) {
-
+void CountKmer(ulong prefix, uloc pos, ulong mutateFrom, ulong mutateTo,
+		void* data) {
 
 	SequenceLocation loc;
 	loc.m_Location = pos;
-	if(!SequenceProvider.convert(loc)) {
+	if (!SequenceProvider.convert(loc)) {
 		Log.Message("Couldn't decode sequence location.");
 		Fatal();
 	}
@@ -58,18 +58,20 @@ void CountKmer(ulong prefix, uint pos, ulong mutateFrom, ulong mutateTo, void* d
 	int refNameLength = 0;
 	char const * refName = SequenceProvider.GetRefName(loc.getrefId(), refNameLength);
 
-	if(strcmp(refName, "2L") == 0 && loc.m_Location == 525937) {
+	if (strcmp(refName, "2L") == 0 && loc.m_Location == 525937) {
 		Log.Message("Here");
 	}
 
 	RefEntry const * cur = m_RefProvider->GetRefEntry(prefix, m_entry);
 
-	//5 cols: 5th is number on - strand
-	//fprintf(ofp, "%s\t%u\t%u\t%d\t%d\n", refName, loc.m_Location, loc.m_Location + 1, cur->refCount, cur->nextEntry->refCount);
-	//4 cols
-	fprintf(ofp, "%s\t%u\t%u\t%d\n", refName, loc.m_Location, loc.m_Location + 1, cur->refCount);
+	if (cur != 0) {
+		//5 cols: 5th is number on - strand
+		//fprintf(ofp, "%s\t%u\t%u\t%d\t%d\n", refName, loc.m_Location, loc.m_Location + 1, cur->refCount, cur->nextEntry->refCount);
+		//4 cols
+		fprintf(ofp, "%s\t%llu\t%llu\t%d\n", refName, loc.m_Location,
+				loc.m_Location + 1, cur->refCount);
 
-	//	int * freq = (int *) data;
+		//	int * freq = (int *) data;
 //	if (prefix == lastPrefix) {
 //		int currentBin = GetBin(pos);
 //		if (currentBin != lastBin || lastBin == -1) {
@@ -86,24 +88,28 @@ void CountKmer(ulong prefix, uint pos, ulong mutateFrom, ulong mutateTo, void* d
 //		freq[prefix] += 1;
 //	}
 //	lastPrefix = prefix;
-	//delete m_entry->nextEntry; m_entry->nextEntry = 0;
-	//delete m_entry;
+		//delete m_entry->nextEntry; m_entry->nextEntry = 0;
+		//delete m_entry;
+	}
 }
-
 
 int kmer_distribution(int argc, char **argv) {
 
 	try {
 
-		TCLAP::CmdLine cmd("Interleaves paired end reads from two FASTA/Q files into one FASTQ file.", ' ', "0.1", false);
+		TCLAP::CmdLine cmd(
+				"Interleaves paired end reads from two FASTA/Q files into one FASTQ file.",
+				' ', "0.1", false);
 
 		//TCLAP::ValueArg<std::string> leftArg("1", "m1", "Upstream mates (FASTA/Q)", true, "", "file");
 		//TCLAP::ValueArg<std::string> rightArg("2", "m2", "Downstream mates (FASTA/Q)", true, "", "file");
 
-		TCLAP::ValueArg<std::string> refArg("r", "ref", "Reference file", true, "", "file");
+		TCLAP::ValueArg<std::string> refArg("r", "ref", "Reference file", true,
+				"", "file");
 		//TCLAP::ValueArg<std::string> unpairedArg("u", "unpaired", "Write reads without mate to this file.", false, "", "file");
 
-		TCLAP::ValueArg<std::string> outArg("o", "out", "Output file", true, "", "file");
+		TCLAP::ValueArg<std::string> outArg("o", "out", "Output file", true, "",
+				"file");
 
 		TCLAP::ValueArg<int> kmerArg("k", "kmer", "K-mer length", false, 13,
 				"int");
@@ -123,7 +129,7 @@ int kmer_distribution(int argc, char **argv) {
 		cmd.parse(argc, argv);
 
 		_log = &Log;
-		_Log::Init(0,0); // Inits logging to file
+		_Log::Init(0, 0); // Inits logging to file
 
 		((_Config*) _config)->Default("bs_mapping", 0);
 		((_Config*) _config)->Default("skip_save", 0);
@@ -132,10 +138,8 @@ int kmer_distribution(int argc, char **argv) {
 		//((_Config*) _config)->Default("ref", "/project/ngs-work/meta/reference/genomes/eck12_MG1655_ecoli/eck12_MG1655_ecoli.fasta");
 		((_Config*) _config)->Default("ref", refArg.getValue().c_str());
 
-
 		((_Config*) _config)->Override("kmer", kmerArg.getValue());
 		((_Config*) _config)->Override("kmer_skip", 0);
-
 
 		CS::prefixBasecount = Config.GetInt("kmer", 4, 32);
 		CS::prefixBits = CS::prefixBasecount * 2;
@@ -158,14 +162,15 @@ int kmer_distribution(int argc, char **argv) {
 
 		m_RefProvider = new CompactPrefixTable(true, false);
 
-
-
 		int length = 100;
 		int * freq = new int[length];
 		memset(freq, 0, length);
 
-		m_entry = new RefEntry(0);
-		m_entry->nextEntry = new RefEntry(0);
+		//m_entry = new RefEntry(0);
+		//m_entry->nextEntry = new RefEntry(0);
+
+		m_entryCount = m_RefProvider->GetRefEntryChainLength();
+		m_entry = new RefEntry[m_entryCount];
 
 		Log.Message("Processing: ");
 		ofp = fopen(outArg.getValue().c_str(), "w");
@@ -176,19 +181,19 @@ int kmer_distribution(int argc, char **argv) {
 //
 //			if (!DualStrand || !(m_CurGenSeq % 2)) {
 //
-				uint offset = SequenceProvider.GetRefStart(i);
-				uint len = SequenceProvider.GetRefLen(i);
-				int m_RefSkip = 0;
-				char * seq = new char[len + 2];
-				SequenceProvider.DecodeRefSequence(seq, i, offset, len);
+			uloc offset = SequenceProvider.GetRefStart(i);
+			uloc len = SequenceProvider.GetRefLen(i);
+			int m_RefSkip = 0;
+			char * seq = new char[len + 2];
+			SequenceProvider.DecodeRefSequence(seq, i, offset, len);
 
-				int refNameLength = 0;
-				char const * refName = SequenceProvider.GetRefName(i, refNameLength);
-				Log.Message("%s", refName);
+			int refNameLength = 0;
+			char const * refName = SequenceProvider.GetRefName(i, refNameLength);
+			Log.Message("%s", refName);
 //
-				CS::PrefixIteration(seq, len, &CountKmer, 0, 0, freq, m_RefSkip, offset);
+			CS::PrefixIteration(seq, len, &CountKmer, 0, 0, freq, m_RefSkip, offset);
 
-				delete[] seq; seq = 0;
+			delete[] seq; seq = 0;
 //				delete[] seq;
 //				seq = 0;
 //			}
@@ -200,10 +205,11 @@ int kmer_distribution(int argc, char **argv) {
 //
 
 	} catch (TCLAP::ArgException &e) {
-		std::cerr << "error: " << e.error() << " for arg " << e.argId() << std::endl;
+		std::cerr << "error: " << e.error() << " for arg " << e.argId()
+				<< std::endl;
 	} catch (std::ios_base::failure &e) {
 		std::cerr << "Error: " << e.what() << std::endl;
-	} catch(char const * msg) {
+	} catch (char const * msg) {
 		std::cerr << "Exception: " << msg << std::endl;
 	}
 

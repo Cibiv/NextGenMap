@@ -10,7 +10,7 @@
 
 #include <getopt.h>
 
-static char const * getopt_short = "c:o:q:r:t:gs:m:f:k:pleI:X:i:n:R:C:b1:2:d:Q:";
+static char const * getopt_short = "c:o:q:r:t:gs:m:f:k:pleI:X:i:n:R:C:b1:2:d:Q:5:";
 
 //Here '-' has to be used and not '_'. When querying the Config the '-' has to be replaced by '_'.
 //When passing parameters trough the config file '-' and '_' can both be used.
@@ -82,12 +82,24 @@ static const struct option long_options[] =
 		{ "rg-pu",      				required_argument, 0, 0 },
 		{ "rg-sm",      				required_argument, 0, 0 },
 #ifdef DEBUGLOG
-		{ "log",        				required_argument, 0, 0 },
+		{ "log",        				no_argument, 0, 0 },
 		{ "log-lvl",      				required_argument, 0, 0 },
 #endif
 		{ "argos",   	  		        no_argument,       0, 0 },
 		{ "argos-min-score",			required_argument, 0, 0 },
 		{ "gz",   	  		            no_argument,       0, 0 },
+		{ "update-check",				no_argument,       0, 0 },
+		{ "vcf", 	   					required_argument, 0, 0 },
+		{ "max-read-length",            required_argument, 0, 0 },
+		{ "force-rlength-check",        no_argument,       0, 0 },
+		{ "bin-size",                   required_argument,       0, 0 },
+		{ "slam-seq",                   required_argument,       0, 0 },
+		{ "very-fast",                  no_argument,       0, 0 },
+		{ "fast",                       no_argument,       0, 0 },
+		{ "sensitive",                  no_argument,       0, 0 },
+		{ "very-sensitive",             no_argument,       0, 0 },
+		{ "max-kfreq",                  required_argument,       0, 0 },
+		{ TRIM5,                        required_argument,       0, '5' },
 	0 };
 
 #endif /* OPTIONS_H_ */

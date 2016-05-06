@@ -42,11 +42,11 @@ bool _Config::InternalExists(std::string name) const {
 	return config_map->count(name) == 1;
 }
 
-std::string _Config::InternalGet(std::string name, char const * * arr_data) const {
+std::string const & _Config::InternalGet(std::string name, char const * * arr_data) const {
 	std::transform(name.begin(), name.end(), name.begin(), ::tolower);
 	if (!InternalExists(name)) {
 		Log.Warning("Tried to access unknown config value \"%s\"", name.c_str());
-		return "";
+		return empty;
 	} else {
 		if (arr_data != 0) {
 			if (config_arrays->count(name) == 0) {
@@ -58,7 +58,7 @@ std::string _Config::InternalGet(std::string name, char const * * arr_data) cons
 		return (*config_map)[name];
 	}
 }
-std::string _Config::InternalGet(std::string name) const {
+std::string const & _Config::InternalGet(std::string name) const {
 	return InternalGet(name, 0);
 }
 
@@ -443,10 +443,16 @@ _Config::_Config(int argc, char * argv[], bool praseArgs) {
 				Default(GAP_REF_PENALTY, 20);
 				Default(GAP_EXTEND_PENALTY, 5);
 			}
+			Default(MATCH_BONUS_TT, 10);
+			Default(MATCH_BONUS_TC, 2);
 		} else {
 			Log.Message("Using bs-mapping scoring scheme");
 			if(GetInt("affine")) {
 				Log.Error("'--bs-mapping' and '--affine' can't be used at the same time!");
+				Fatal();
+			}
+			if(Exists(SLAM_SEQ)) {
+				Log.Error("'--bs-mapping' and '--slam-seq' can't be used at the same time!");
 				Fatal();
 			}
 			if(Exists(ENDTOEND)) {
@@ -459,9 +465,9 @@ _Config::_Config(int argc, char * argv[], bool praseArgs) {
 			Default(GAP_READ_PENALTY, 10);
 			Default(GAP_REF_PENALTY, 10);
 			Default(GAP_EXTEND_PENALTY, 2);
+			Default(MATCH_BONUS_TT, 4);
+			Default(MATCH_BONUS_TC, 4);
 		}
-		Default(MATCH_BONUS_TT, 4);
-		Default(MATCH_BONUS_TC, 4);
 
 		//Silent
 		Default("dualstrand", 1);
@@ -490,19 +496,39 @@ _Config::_Config(int argc, char * argv[], bool praseArgs) {
 		//BS-mapping
 		Default("bs_cutoff", 6);
 
+		Default(SLAM_SEQ, 0);
+
 		//Others
 		Default("no_progress", 0);
 		Default("pe_delimiter", "/");
+		Default("update_check", 0);
 
 		Default(ARGOS_MINSCORE, 0);
+
+		Default(RLENGTH_CHECK, 0);
+
+		Default(MAX_READ_LENGTH, 0);
+
+		Default(BIN_SIZE, 2);
+
+		Default(TRIM5, 0);
 
 		if(Exists(ARGOS)) {
 			Default("sensitivity", 0.0f);
 			Override("cpu_threads", 1);
 		}
 
+		Default("very_fast", 0);
+		Default("fast", 0);
+		Default("sensitive", 0);
+		Default("very_sensitive", 0);
+
+#ifdef __APPLE__
+		Default("gpu", 0);
+#endif
+
 #ifdef DEBUGLOG
-//	Default("log_lvl", "16383");
+	//Default("log_lvl", "16383");
 	Default("log_lvl", "255");
 	//Default(LOG_LVL, "0");
 #endif
@@ -514,7 +540,12 @@ _Config::_Config(int argc, char * argv[], bool praseArgs) {
 				Log.Warning("The parameter 'corridor' is depreciated. Please remove the 'corridor' entry from the config file and use 'max-consec-indels'.");
 			} else {
 				if (Exists("gpu") && (GetInt(MAX_C_INDELS) > 40 || GetInt(MAX_C_INDELS) < 5)) {
-					Log.Error("[CONFIG] Value %s : %d out of range [5, 40] - using default value", MAX_C_INDELS, GetInt(MAX_C_INDELS));
+					if(GetInt(MAX_C_INDELS) < 5) {
+						Log.Error("-C/--max-consec-indels must be >= 5");
+					} else {
+						Log.Error("-C/--max-consec-indels out of range. When using -g/--gpu, the Number of consecutive indels must be <= 40.");
+					}
+					Fatal();
 				} else {
 					std::stringstream ss;
 					ss << GetInt(MAX_C_INDELS) * 2;
@@ -646,4 +677,3 @@ gpu = 1 { 0 }\n\
 mason_path = 	/software/ngm/ngm/mason/	\n\
 \n\
 \n";
-

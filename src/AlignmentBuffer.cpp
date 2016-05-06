@@ -27,7 +27,8 @@ void AlignmentBuffer::debugAlgnFinished(MappedRead * read) {
 			SequenceProvider.convert(loc);
 
 			int refNameLength = 0;
-			Log.Debug(128, "READ_%d\tALGN_RESULTS\tCMR_%d\t%f\t%f\t%d\t%s\t%s\t%d\t%s", read->ReadId, i, score.Score.f, align.Identity, align.NM, align.pBuffer1, align.pBuffer2, loc.m_Location, SequenceProvider.GetRefName(loc.getrefId(), refNameLength));
+			//TODO_GENOMESIZE: Re-enable me
+			//Log.Debug(128, "READ_%d\tALGN_RESULTS\tCMR_%d\t%f\t%f\t%d\t%s\t%s\t%d\t%s", read->ReadId, i, score.Score.f, align.Identity, align.NM, align.pBuffer1, align.pBuffer2, loc.m_Location, SequenceProvider.GetRefName(loc.getrefId(), refNameLength));
 		}
 
 	}
@@ -48,7 +49,7 @@ void AlignmentBuffer::addRead(MappedRead * read, int scoreID) {
 			//read->clearScores(-1);
 			SaveRead(read, false);
 		} else {
-			Log.Debug(512, "READ_%d\tALGN_BUFFER\tCMR_%d %f (location %u) added to alignment buffer at position %d", read->ReadId, scoreID, read->Scores[scoreID].Score.f, read->Scores[scoreID].Location.m_Location, nReads);
+			Log.Debug(512, "READ_%d\tALGN_BUFFER\tCMR_%d %f (location %llu) added to alignment buffer at position %d", read->ReadId, scoreID, read->Scores[scoreID].Score.f, read->Scores[scoreID].Location.m_Location, nReads);
 			//add alignment computations to buffer. if buffer is full, submit to CPU/GPU
 			reads[nReads].scoreId = scoreID;
 			reads[nReads++].read = read;
@@ -78,6 +79,7 @@ void AlignmentBuffer::DoRun() {
 			//Initialize
 			if (cur_read->Scores[scoreID].Location.isReverse()) {
 				qryBuffer[i] = cur_read->RevSeq;
+				qalBuffer[i] = cur_read->qlty;
 
 				if (cur_read->Paired != 0) {
 					m_DirBuffer[i] = !(cur_read->ReadId & 1);
@@ -87,6 +89,7 @@ void AlignmentBuffer::DoRun() {
 
 			} else {
 				qryBuffer[i] = cur_read->Seq;
+				qalBuffer[i] = cur_read->qlty;
 				if (cur_read->Paired != 0) {
 					m_DirBuffer[i] = cur_read->ReadId & 1; //0 if first pair
 				} else {
@@ -108,8 +111,8 @@ void AlignmentBuffer::DoRun() {
 		}
 
 		//start alignment
-		int aligned = aligner->BatchAlign(alignmode | (std::max(outputformat, 1) << 8), count, refBuffer, qryBuffer, alignBuffer,
-				(m_EnableBS) ? m_DirBuffer : 0);
+		int aligned = aligner->BatchAlign(alignmode | (std::max(outputformat, 1) << 8), count, refBuffer, qryBuffer, qalBuffer, alignBuffer,
+				(m_EnableBS || slamSeq) ? m_DirBuffer : 0);
 
 		Log.Debug(32, "INFO\tALGN\t%d alignments computed (out of %d)", aligned, count);
 
@@ -127,7 +130,7 @@ void AlignmentBuffer::DoRun() {
 
 			cur_read->Alignments[scoreID] = alignBuffer[i];
 
-			Log.Debug(2048, "READ_%d\tALGN_DETAILS\tCMR_%d\t%f\t%f\t%d\t%.*s\t%s", cur_read->ReadId, scoreID, cur_read->Scores[scoreID].Score.f, alignBuffer[i].Identity, alignBuffer[i].NM, refMaxLen, refBuffer[i], qryBuffer[i]);
+			Log.Debug(2048, "READ_%d\tALGN_DETAILS\tCMR_%d\t%f\t%f\t%llu\t%.*s\t%s", cur_read->ReadId, scoreID, cur_read->Scores[scoreID].Score.f, alignBuffer[i].Identity, alignBuffer[i].NM, refMaxLen, refBuffer[i], qryBuffer[i]);
 
 			if ((cur_read->Calculated - 1) == scoreID) {
 

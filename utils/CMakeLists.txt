@@ -30,6 +30,7 @@ add_executable(ngm-utils main.cpp
 								../src/SequenceProvider.cpp
 								../src/config/Config.cpp
 								../src/PrefixTable.cpp
+								../src/parser/VcfParser.cpp
 								../src/CSstatic.cpp
  					)		
  
@@ -48,6 +49,7 @@ add_executable(ngm-utils main.cpp
 								../src/SequenceProvider.cpp
 								../src/config/Config.cpp
 								../src/PrefixTable.cpp
+								../src/parser/VcfParser.cpp
 								../src/CSstatic.cpp
  					)
 
@@ -57,8 +59,13 @@ SET_TARGET_PROPERTIES(ngm-utils-debug PROPERTIES COMPILE_FLAGS "-g3 -O0")
 
 add_definitions(-D _BAM)
 
+TARGET_LINK_LIBRARIES(ngm-utils pthread)
+TARGET_LINK_LIBRARIES(ngm-utils-debug pthread)
+
 TARGET_LINK_LIBRARIES(ngm-utils BamTools-static)
 TARGET_LINK_LIBRARIES(ngm-utils-debug BamTools-static)
 
 TARGET_LINK_LIBRARIES(ngm-utils zlibstatic)
+#TARGET_LINK_LIBRARIES(ngm-utils "-lz")
 TARGET_LINK_LIBRARIES(ngm-utils-debug zlibstatic)
+#TARGET_LINK_LIBRARIES(ngm-utils-debug "-lz")

@@ -12,7 +12,7 @@ public:
 //	BAMWriter(char const * const filename) :
 //			GenericReadWriter(filename), file(filename) {
 	BAMWriter(FileWriterBam * pWriter, char const * const pFile) :
-			GenericReadWriter(), writer(pWriter), file(pFile) {
+			GenericReadWriter(), writer(pWriter), file(pFile), slamSeq(Config.GetInt(SLAM_SEQ)) {
 		NGMInitMutex(&m_OutputMutex);
 		bufferIndex = 0;
 		//Log.Error("BAM output not supported at the moment!");
@@ -39,19 +39,22 @@ protected:
 	virtual void DoWriteEpilog();
 
 private:
-	char const * const file;
 	void translate_flag(BamTools::BamAlignment * al, int flags);
 	void addAdditionalInfo(const MappedRead* const read, BamTools::BamAlignment* al);
 
-	NGMMutex m_OutputMutex;
-
 	FileWriterBam * writer;
+
+	char const * const file;
+
+	NGMMutex m_OutputMutex;
 
 	BamTools::BamAlignment * buffer[10000];
 
 	int bufferIndex;
 
 	std::string RG;
+
+	bool const slamSeq;
 
 };
 
