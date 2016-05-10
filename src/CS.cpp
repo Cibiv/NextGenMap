@@ -8,6 +8,7 @@
 #include "Timing.h"
 #include "Debug.h"
 #include "AlignmentBuffer.h"
+#include "ReadProvider.h"
 
 #undef module_name
 #define module_name "CS"
@@ -326,12 +327,20 @@ void CS::SendToBuffer(MappedRead * read, ScoreBuffer * sw,
 
 	if (count == 0) {
 		read->Calculated = 0;
-		out->addRead(read, -1);
+//		out->addRead(read, -1);
+		printf("%s\t*\t0\t0.0\n", read->name);
 	} else {
 		read->Calculated = 0;
-		sw->addRead(read, count);
+//		sw->addRead(read, count);
+
+		SequenceLocation loc = read->Scores[0].Location;
+		SequenceProvider.convert(loc);
+		int len = 0;
+		printf("%s\t%s\t%lld\t%f\n", read->name, SequenceProvider.GetRefName(loc.getrefId(), len), loc.m_Location, read->Scores[0].Score.f);
+
 		++m_WrittenReads;
 	}
+	NGM.GetReadProvider()->DisposeRead(read);
 }
 
 void CS::Cleanup() {
