@@ -9,6 +9,8 @@
 #include "Debug.h"
 #include "AlignmentBuffer.h"
 
+#include "BitpalAligner.h"
+
 #undef module_name
 #define module_name "CS"
 
@@ -453,11 +455,14 @@ void CS::DoRun() {
 	}
 
 	NGM.AquireOutputLock();
+//	IAlignment * scoreAligner = new BitpalAligner();
+	IAlignment * scoreAligner = oclAligner;
 	oclAligner = NGM.CreateAlignment(gpu | (std::min(Config.GetInt("format", 0, 2), 1) << 8));
 	AlignmentBuffer * alignmentBuffer = new AlignmentBuffer(
 			Config.Exists("output") ? Config.GetString("output") : 0,
 			oclAligner);
-	ScoreBuffer * scoreBuffer = new ScoreBuffer(oclAligner, alignmentBuffer);
+
+	ScoreBuffer * scoreBuffer = new ScoreBuffer(scoreAligner, alignmentBuffer);
 	NGM.ReleaseOutputLock();
 
 	int x_SrchTableLen = (int) pow(2, x_SrchTableBitLen);
@@ -518,6 +523,8 @@ void CS::DoRun() {
 		m_Overflows = 0;
 	}
 
+	delete scoreAligner;
+	scoreAligner = 0;
 	delete scoreBuffer;
 	scoreBuffer = 0;
 	delete alignmentBuffer;

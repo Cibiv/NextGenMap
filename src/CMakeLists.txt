@@ -17,6 +17,7 @@ include_directories (.)
 configure_file( Version.h.in ${CMAKE_SOURCE_DIR}/src/Version.h )
 
 add_executable(ngm-core 	
+                    BitpalAligner.cpp
 					parser/BamParser.cpp
 					writer/BAMWriter.cpp
 					parser/VcfParser.cpp																	
@@ -59,6 +60,7 @@ add_definitions(-D _BAM)
 
 
 add_executable(ngm-core-debug	
+                    BitpalAligner.cpp
 					parser/BamParser.cpp
 					writer/BAMWriter.cpp
 					parser/VcfParser.cpp																		

@@ -15,6 +15,7 @@
 
 #include "OclHost.h"
 #include "SWOclCigar.h"
+#include "BitpalAligner.h"
 #include "seqan/EndToEndAffine.h"
 
 #undef module_name
@@ -409,6 +410,7 @@ IAlignment * _NGM::CreateAlignment(int const mode) {
 			Log.Error("Unsupported report type %i", mode);
 			break;
 		}
+//		instance = new BitpalAligner();
 	}
 
 	return instance;
