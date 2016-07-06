@@ -457,8 +457,8 @@ void CS::DoRun() {
 	NGM.AquireOutputLock();
 
 	oclAligner = NGM.CreateAlignment(gpu | (std::min(Config.GetInt("format", 0, 2), 1) << 8));
-//	IAlignment * scoreAligner = new BitpalAligner();
-	IAlignment * scoreAligner = oclAligner;
+	IAlignment * scoreAligner = new BitpalAligner();
+//	IAlignment * scoreAligner = oclAligner;
 	AlignmentBuffer * alignmentBuffer = new AlignmentBuffer(
 			Config.Exists("output") ? Config.GetString("output") : 0,
 			oclAligner);

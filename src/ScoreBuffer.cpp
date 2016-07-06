@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "NGMTask.h"
 #include "Debug.h"
@@ -227,8 +228,8 @@ void ScoreBuffer::DoRun() {
 
 void ScoreBuffer::top1SE(MappedRead* read) {
 
-	float bestScore = 0.0f;
-	float secondBestScore = 0.0f;
+	float bestScore = std::numeric_limits<float>::min();
+	float secondBestScore = std::numeric_limits<float>::min();
 
 	int bestScoreIndex = 0;
 	int numBestScore = 0;
@@ -395,7 +396,7 @@ void ScoreBuffer::top1PE(MappedRead* read) {
 
 	//Look for top-scoring pair. If pairs with equal score are found ties are broken by comparing their
 	//insert size to the average insert size
-	float topScore = 0.0f;
+	float topScore = std::numeric_limits<float>::min();
 
 	int distance = 0;
 	int equalScoreFound = 0;
@@ -415,7 +416,7 @@ void ScoreBuffer::top1PE(MappedRead* read) {
 		}
 	}
 	Log.Verbose("Pairs with equal score: %d", equalScoreFound);
-	if (topScore > 0.0f) {
+	if (topScore > std::numeric_limits<float>::min()) {
 		if (equalScoreFound <= 0 || !strata) {
 			pairDistSum += distance;
 			pairDistCount += 1;

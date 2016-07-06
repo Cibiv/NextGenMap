@@ -787,7 +787,8 @@ int BitpalAligner::Score(char const * ref, char const * read) {
 
 //	Log.Message("Ref:   %s", ref);
 //	Log.Message("Read:  %s", read);
-	int result = bitwise_alignment_0_1_1(const_cast<char *>(read), const_cast<char *>(ref), (strlen(ref) / 63 + 1));
+//	int result = bitwise_alignment_0_1_1(const_cast<char *>(read), const_cast<char *>(ref), (strlen(ref) / 63 + 1));
+	int result = bitwise_alignment(const_cast<char *>(read), const_cast<char *>(ref), (strlen(ref) / 63 + 1));
 //	Log.Message("Score: %d", result);
 	return result;
 
