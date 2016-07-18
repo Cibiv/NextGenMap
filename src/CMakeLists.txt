@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(NextGenMap)
 
-include_directories (../lib/seqan-library-1.4.1/include)
+#include_directories (../lib/seqan-library-1.4.1/include)
+include_directories (../lib/seqan-seqan-v2.2.0/include)
 #include_directories (../lib/bamtools-2.3.0/src/api)
 include_directories (../lib/bamtools-2.3.0/src)
 include_directories (../lib/mason/opencl)
@@ -48,7 +49,7 @@ add_executable(ngm-core
 					
 ADD_CUSTOM_TARGET(recompile_always ALL touch "${CMAKE_SOURCE_DIR}/src/NGM_main.cpp")
 
-SET_TARGET_PROPERTIES(ngm-core PROPERTIES COMPILE_FLAGS "-g -O3 -DNDEBUG")
+SET_TARGET_PROPERTIES(ngm-core PROPERTIES COMPILE_FLAGS "-g -std=c++14 -O3 -DNDEBUG")
 
 target_link_libraries(ngm-core pthread)
 target_link_libraries(ngm-core MASonOpenCl)	
@@ -93,7 +94,7 @@ add_executable(ngm-core-debug
 
 set_target_properties(ngm-core-debug PROPERTIES COMPILE_DEFINITIONS "DEBUGLOG")
 
-SET_TARGET_PROPERTIES(ngm-core-debug PROPERTIES COMPILE_FLAGS "-g3 -O0")
+SET_TARGET_PROPERTIES(ngm-core-debug PROPERTIES COMPILE_FLAGS " -std=c++14 -g3 -O0")
 
 target_link_libraries(ngm-core-debug pthread)
 target_link_libraries(ngm-core-debug MASonOpenCl-debug)	

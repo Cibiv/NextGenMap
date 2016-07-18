@@ -1,0 +1,7 @@
+build
+dox/html
+manual/build
+sandbox
+!sandbox/CMakeLists.txt
+*.pyc
+*~

@@ -9,7 +9,7 @@
 
 int EndToEndAffine::BatchScore(int const mode, int const batchSize, char const * const * const refSeqList, char const * const * const qrySeqList, char const * const * const qalSeqList, float * const results, void * extData) {
 	for(int i = 0; i < batchSize; ++i) {
-		switch(m_AlignMode) {
+		switch((int)m_AlignMode) {
 			case 0:
 			{
 				TGaps gapsText;
@@ -38,7 +38,7 @@ int EndToEndAffine::BatchAlign(int const mode, int const batchSize, char const *
 		int len = length(gapsPattern);
 
 		float result = 0.0f;
-		switch(m_AlignMode) {
+		switch((int)m_AlignMode) {
 			case 0:
 				result = (float)localAlignment(gapsText, gapsPattern, scoringScheme, lDiag, uDiag);
 				break;
