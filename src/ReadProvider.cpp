@@ -230,24 +230,14 @@ uint ReadProvider::init() {
 					minLen = std::min(minLen, (size_t) read->length);
 					sumLen += read->length;
 
-//				Log.Message("Name: %s", read->name);
-//				Log.Message("Read: %s", read->Seq);
-//				Log.Message("Qlty: %s", read->qlty);
-
 					readCount += 1;
 					if (estimate && (readCount % estimateStepSize) == 0
 							&& readCount < estimateSize) {
 						ulong mutateFrom;
 						ulong mutateTo;
-						if (isPaired && (readCount & 1)) {
-							//Second mate
-							mutateFrom = 0x0;
-							mutateTo = 0x3;
-						} else {
-							//First mate
-							mutateFrom = 0x2;
-							mutateTo = 0x1;
-						}
+						//First mate
+						mutateFrom = 0x2;
+						mutateTo = 0x1;
 						m_CurrentReadLength = read->length;
 						CS::PrefixIteration((char const *) read->Seq,
 								read->length, fnc, mutateFrom, mutateTo,
