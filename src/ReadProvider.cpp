@@ -164,7 +164,7 @@ uint ReadProvider::init() {
 			ulong mutateTo, void* data);
 	PrefixIterationFn fnc = &PrefixSearch;
 
-	bool const isPaired = Config.GetInt("paired") > 1;
+	bool const isPaired = Config.GetInt("paired") == 1;
 
 	if (isPaired) {
 		Log.Message("Input is paired end data.");
