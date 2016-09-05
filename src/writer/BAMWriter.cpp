@@ -244,6 +244,7 @@ void BAMWriter::DoWriteReadGeneric(MappedRead const * const read, int const scor
 	float identity = round(read->Alignments[scoreId].Identity * 10000.0f) / 10000.0f;
 	al->AddTag("XI", "f", identity);
 	al->AddTag("X0", "i", (int) read->numTopScores);
+	al->AddTag("NH", "i", (int) read->numTopScores);
 //TODO: fix. Calculated used to be the number of score computed. Now it is the number of computed alignments.
 //Thus it can't be used for X1 anymore.
 //al->AddTag("X1", "i", (int) (read->Calculated - read->EqualScoringCount));

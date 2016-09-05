@@ -262,7 +262,7 @@ void ScoreBuffer::top1SE(MappedRead* read) {
 
 		//clear all sub-optimal scores and submit best-scoring region to alignment computation
 		read->clearScores(bestScoreIndex);
-		read->Calculated = 1;
+		read->Calculated = numBestScore;
 		read->Alignments = new Align[read->Calculated];
 		read->numTopScores = numBestScore;
 
