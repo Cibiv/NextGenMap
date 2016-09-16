@@ -176,6 +176,9 @@ void SAMWriter::DoWriteReadGeneric(MappedRead const * const read,
 	float identity = round(read->Alignments[scoreID].Identity * 10000.0f) / 10000.0f;
 	Print("XI:f:%g\t", identity);
 	Print("X0:i:%d\t", read->numTopScores);
+	if(trimPolyA) {
+		Print("XA:i:%d\t", read->polyATrimmed);
+	}
 	//TODO: fix. Calculated used to be the number of score computed. Now it is the number of computed alignments.
 	//Thus it can't be used for X1 anymore.
 	//Print("X1:i:%d\t", read->Calculated - read->EqualScoringCount);
@@ -333,6 +336,9 @@ void SAMWriter::DoWriteUnmappedReadGeneric(MappedRead const * const read,
 			Print("*");
 		}
 
+		if(trimPolyA) {
+			Print("\tXA:i:%d", read->polyATrimmed);
+		}
 		if(RG != 0) {
 			Print("\tRG:Z:%s", RG);
 		}

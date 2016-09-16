@@ -41,7 +41,7 @@ public:
 	int mappingQlty;
 	float s;
 	int length;
-
+	int polyATrimmed;
 	char * RevSeq;
 	char * Seq;
 

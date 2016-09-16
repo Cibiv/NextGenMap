@@ -48,6 +48,8 @@ static char const * const SLAM_SEQ = "slam_seq";
 static char const * const MAX_KFREQ = "max_kfreq";
 static char const * const TRIM5 = "trim5";
 
+static char const * const MAX_POLYA = "max_polya";
+
 #ifdef DEBUGLOG
 static char const * const LOG = "log";
 static char const * const LOG_LVL = "log_lvl";

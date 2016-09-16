@@ -8,7 +8,7 @@ public:
 //		SAMWriter(char const * const filename) :
 //			GenericReadWriter(filename) {
 	SAMWriter(FileWriter * writer) :
-			GenericReadWriter(), slamSeq(Config.GetInt(SLAM_SEQ)) {
+			GenericReadWriter(), slamSeq(Config.GetInt(SLAM_SEQ)), trimPolyA(Config.GetInt(MAX_POLYA) >= 0) {
 
 		if(Config.Exists(RG_ID)) {
 			RG = Config.GetString(RG_ID);
@@ -39,6 +39,8 @@ private:
 	char const * RG;
 
 	int const slamSeq;
+
+	bool const trimPolyA;
 };
 
 #endif

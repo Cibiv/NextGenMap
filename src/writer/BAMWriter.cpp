@@ -244,6 +244,9 @@ void BAMWriter::DoWriteReadGeneric(MappedRead const * const read, int const scor
 
 	float identity = round(read->Alignments[scoreId].Identity * 10000.0f) / 10000.0f;
 	al->AddTag("XI", "f", identity);
+	if(trimPolyA) {
+		al->AddTag("XA", "i", read->polyATrimmed);
+	}
 	al->AddTag("X0", "i", (int) read->numTopScores);
 //TODO: fix. Calculated used to be the number of score computed. Now it is the number of computed alignments.
 //Thus it can't be used for X1 anymore.
@@ -335,6 +338,10 @@ void BAMWriter::DoWriteUnmappedReadGeneric(MappedRead const * const read, int co
 			al->Qualities = std::string(qltystr, qltylen);
 		} else {
 			al->Qualities = std::string(readlen, ':');
+		}
+
+		if(trimPolyA) {
+			al->AddTag("XA", "i", read->polyATrimmed);
 		}
 
 		if(RG.size() > 0) {

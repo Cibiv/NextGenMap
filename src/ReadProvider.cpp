@@ -418,6 +418,25 @@ MappedRead * ReadProvider::NextRead(IParser * parser, int const id) {
 			Log.Debug(2, "READ_%d\tINPUT\t%s", id, read->name);
 			Log.Debug(16384, "READ_%d\tINPUT_DETAILS\t%s\t%s\t%s\t%s", id, read->Seq, read->qlty, read->AdditionalInfo);
 
+
+			// Remove poly A tail
+			static int maxPolyALength = Config.GetInt(MAX_POLYA);
+			if (maxPolyALength >= 0) {
+				int i = read->length - 1;
+				int polyALength = 0;
+				while (i >= 0 && (read->Seq[i] == 'A' || read->Seq[i] == 'a')) {
+					polyALength += 1;
+					i -= 1;
+				}
+				if (polyALength > maxPolyALength) {
+					read->polyATrimmed = polyALength;
+					read->length -= polyALength;
+					memset(read->Seq + read->length, '\0',
+							polyALength * sizeof(char));
+				}
+			}
+
+
 			NGM.AddReadRead(read->ReadId);
 		} else {
 

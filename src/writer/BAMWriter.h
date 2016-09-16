@@ -12,7 +12,7 @@ public:
 //	BAMWriter(char const * const filename) :
 //			GenericReadWriter(filename), file(filename) {
 	BAMWriter(FileWriterBam * pWriter, char const * const pFile) :
-			GenericReadWriter(), writer(pWriter), file(pFile), slamSeq(Config.GetInt(SLAM_SEQ)) {
+			GenericReadWriter(), writer(pWriter), file(pFile), slamSeq(Config.GetInt(SLAM_SEQ)), trimPolyA(Config.GetInt(MAX_POLYA) >= 0) {
 		NGMInitMutex(&m_OutputMutex);
 		bufferIndex = 0;
 		//Log.Error("BAM output not supported at the moment!");
@@ -56,6 +56,7 @@ private:
 
 	bool const slamSeq;
 
+	bool const trimPolyA;
 };
 
 

@@ -512,6 +512,7 @@ _Config::_Config(int argc, char * argv[], bool praseArgs) {
 		Default(BIN_SIZE, 2);
 
 		Default(TRIM5, 0);
+		Default(MAX_POLYA, -1);
 
 		if(Exists(ARGOS)) {
 			Default("sensitivity", 0.0f);
