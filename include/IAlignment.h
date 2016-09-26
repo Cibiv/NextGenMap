@@ -3,10 +3,11 @@
 
 struct AlignmentPosition {
 	AlignmentPosition() :
-			type(-1), readPosition(0), match(true) {
+			type(-1), readPosition(0), refPosition(0), match(true) {
 	}
 	int type;
 	int readPosition;
+	int refPosition;
 	bool match;
 };
 

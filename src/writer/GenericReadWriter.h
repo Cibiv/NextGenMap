@@ -97,63 +97,64 @@ public:
 				(AlignmentPosition *) read->Alignments[scoreID].ExtendedData;
 
 		// MismatchPositions
-		// <type1>:<readPos1>,<type2>:<readPos2>,...
-		// For reverse reads order should be reversed -> Last position of the read is reported as first
-		mp = new char[read->length * 10];
+		// <type1>:<readPos1>:<refPos1>,<type2>:<readPos2>:<refPos2>,...
+		// DEPRECATED: For reverse reads order should be reversed -> Last position of the read is reported as first
+		mp = new char[read->length * 100];
 		mpIndex = 0;
 
-		if (read->Scores[scoreID].Location.isReverse()) {
-			//Get number of alignment positions
-			//TODO: pass length
-			size_t alignIndex = 0;
-			while (alignmentPositons[alignIndex].type > -1) {
-				alignIndex += 1;
-			}
-
-			for (int i = alignIndex - 1; i >= 0; i--) {
-				if (alignmentPositons[i].type >= 0
-						&& alignmentPositons[i].type
-								< (baseNumber * baseNumber)) {
-					//Increase count in rates array
-					rates[alignmentPositons[i].type] += 1;
-					if (!alignmentPositons[i].match) {
-						mpIndex += sprintf(mp + mpIndex, "%d:%d,",
-								alignmentPositons[i].type,
-								read->length
-										- alignmentPositons[i].readPosition);
-					}
-
-				} else {
-					Log.Error("Error while printing T->C rates for SlamSeq output.");
-					Log.Message("%d - %d: %d", i, alignmentPositons[i].type, alignmentPositons[i].readPosition);
-					exit(1);
+//		if (read->Scores[scoreID].Location.isReverse()) {
+//			//Get number of alignment positions
+//			//TODO: pass length
+//			size_t alignIndex = 0;
+//			while (alignmentPositons[alignIndex].type > -1) {
+//				alignIndex += 1;
+//			}
+//
+//			for (int i = alignIndex - 1; i >= 0; i--) {
+//				if (alignmentPositons[i].type >= 0
+//						&& alignmentPositons[i].type
+//								< (baseNumber * baseNumber)) {
+//					//Increase count in rates array
+//					rates[alignmentPositons[i].type] += 1;
+//					if (!alignmentPositons[i].match) {
+//						mpIndex += sprintf(mp + mpIndex, "%d:%d,",
+//								alignmentPositons[i].type,
+//								read->length
+//										- alignmentPositons[i].readPosition);
+//					}
+//
+//				} else {
+//					Log.Error("Error while printing T->C rates for SlamSeq output.");
+//					Log.Message("%d - %d: %d", i, alignmentPositons[i].type, alignmentPositons[i].readPosition);
+//					exit(1);
+//				}
+//
+//			}
+//		} else {
+		// Same but for forward reads
+		size_t alignIndex = 0;
+		while (alignmentPositons[alignIndex].type > -1) {
+			if (alignmentPositons[alignIndex].type >= 0
+					&& alignmentPositons[alignIndex].type
+							< (baseNumber * baseNumber)) {
+				//Increase count in rates array
+				rates[alignmentPositons[alignIndex].type] += 1;
+				if (!alignmentPositons[alignIndex].match) {
+					mpIndex += sprintf(mp + mpIndex, "%d:%d:%d,",
+							alignmentPositons[alignIndex].type,
+							alignmentPositons[alignIndex].readPosition + 1,
+							alignmentPositons[alignIndex].refPosition + 1);
 				}
 
+			} else {
+				Log.Error("Error while printing T->C rates for SlamSeq output.");
+				Log.Message("%d: %d", alignmentPositons[alignIndex].type, alignmentPositons[alignIndex].readPosition);
+				exit(1);
 			}
-		} else {
-			// Same but for forward reads
-			size_t alignIndex = 0;
-			while (alignmentPositons[alignIndex].type > -1) {
-				if (alignmentPositons[alignIndex].type >= 0
-						&& alignmentPositons[alignIndex].type
-						< (baseNumber * baseNumber)) {
-					//Increase count in rates array
-					rates[alignmentPositons[alignIndex].type] += 1;
-					if (!alignmentPositons[alignIndex].match) {
-						mpIndex += sprintf(mp + mpIndex, "%d:%d,",
-								alignmentPositons[alignIndex].type, alignmentPositons[alignIndex].readPosition
-								+ 1);
-					}
 
-				} else {
-					Log.Error("Error while printing T->C rates for SlamSeq output.");
-					Log.Message("%d: %d", alignmentPositons[alignIndex].type, alignmentPositons[alignIndex].readPosition);
-					exit(1);
-				}
-
-				alignIndex += 1;
-			}
+			alignIndex += 1;
 		}
+//		}
 		if (mpIndex > 0) {
 			mp[mpIndex - 1] = '\0';
 		}

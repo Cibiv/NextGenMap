@@ -488,6 +488,7 @@ bool SWOclCigar::computeCigarMD(Align & result, int const gpuCigarOffset,
 							* trans[refSeq[ref_index + k]]
 							+ trans[qrySeq[read_index + k]];
 					alignmentPositions->readPosition = read_index + k;
+					alignmentPositions->refPosition = ref_index + k;
 					alignmentPositions->match = false;
 //					rates[baseNumber * trans[refSeq[ref_index + k]]
 //							+ trans[qrySeq[read_index + k]]]++;
@@ -527,6 +528,7 @@ bool SWOclCigar::computeCigarMD(Align & result, int const gpuCigarOffset,
 							* trans[refSeq[ref_index + k]]
 							+ trans[qrySeq[read_index + k]];
 					alignmentPositions->readPosition = read_index + k;
+					alignmentPositions->refPosition = ref_index + k;
 					alignmentPositions->match = true;
 					alignmentPositions++;
 				}
