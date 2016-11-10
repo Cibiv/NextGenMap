@@ -40,6 +40,8 @@ protected:
 	virtual void DoWriteProlog() = 0;
 	virtual void DoWriteRead(MappedRead const * const read,
 			int const scoreID) = 0;
+	virtual void DoWriteRead(MappedRead const * const read,
+				int const * scoreIDs, int const scoreIdLength) = 0;
 	virtual void DoWritePair(MappedRead const * const read1, int const scoreId1,
 			MappedRead const * const read2, int const scoreId2) = 0;
 	virtual void DoWriteUnmappedRead(MappedRead const * const read, int flags =
@@ -52,7 +54,7 @@ protected:
 
 	int const baseNumber;
 
-	static int const BUFFER_SIZE = 17000000;
+	static int const BUFFER_SIZE = 20000000;
 	static int const BUFFER_LIMIT = 16000000;
 
 	char * writeBuffer;
@@ -223,9 +225,10 @@ public:
 					}
 				}
 				read->Calculated = indexPassed;
-				for(int i = 0; i < indexPassed; ++i) {
-					DoWriteRead(read, passed[i]);
-				}
+				//for(int i = 0; i < indexPassed; ++i) {
+					//DoWriteRead(read, passed[i]);
+				//}
+				DoWriteRead(read, passed, indexPassed);
 
 				if (mappedOnce) {
 					Log.Debug(4, "READ_%d\tOUTPUT\tRead was mapped", read->ReadId);

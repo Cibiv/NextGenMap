@@ -282,10 +282,6 @@ void BAMWriter::DoWriteReadGeneric(MappedRead const * const read, int const scor
 
 
 	buffer[bufferIndex++] = al;
-	if (bufferIndex == (10000 - 1)) {
-		writer->SaveAlignment(buffer, bufferIndex);
-		bufferIndex = 0;
-	}
 
 //NGMUnlock(&m_OutputMutex);
 }
@@ -354,25 +350,38 @@ void BAMWriter::DoWriteUnmappedReadGeneric(MappedRead const * const read, int co
 //	al->AddTag("X0", "i", (int) read->EqualScoringCount);
 //	al->AddTag("XI", "f", read->Identity);
 
-//writer->SaveAlignment(al);
-		buffer[bufferIndex++] = al;
-		if (bufferIndex == (10000 - 1)) {
-			writer->SaveAlignment(buffer, bufferIndex);
-			bufferIndex = 0;
-		}
-
 		if (read->AdditionalInfo != 0) {
 			addAdditionalInfo(read, al);
 		}
+
+		buffer[bufferIndex++] = al;
+	}
+}
+
+void BAMWriter::DoWriteRead(MappedRead const * const read, int const * scoreIDs, int const scoreIdLength) {
+	for(int i = 0; i < scoreIdLength; ++i) {
+		DoWriteReadGeneric(read, scoreIDs[i], -1, -1, 0, read->mappingQlty, 0);
+	}
+	if (bufferIndex >= (bufferLength - 1000)) {
+			writer->SaveAlignment(buffer, bufferIndex);
+			bufferIndex = 0;
 	}
 }
 
 void BAMWriter::DoWriteRead(MappedRead const * const read, int const scoreId) {
 	DoWriteReadGeneric(read, scoreId, -1, -1, 0, read->mappingQlty, 0);
+	if (bufferIndex >= (bufferLength - 1000)) {
+			writer->SaveAlignment(buffer, bufferIndex);
+			bufferIndex = 0;
+	}
 }
 
 void BAMWriter::DoWriteUnmappedRead(MappedRead const * const read, int flags) {
 	DoWriteUnmappedReadGeneric(read, -1, -1, -1, -1, 0, 0, flags);
+	if (bufferIndex >= (bufferLength - 1000)) {
+			writer->SaveAlignment(buffer, bufferIndex);
+			bufferIndex = 0;
+	}
 }
 
 void BAMWriter::DoWritePair(MappedRead const * const read1, int const scoreId1, MappedRead const * const read2, int const scoreId2) {

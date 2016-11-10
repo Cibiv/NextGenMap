@@ -12,9 +12,10 @@ public:
 //	BAMWriter(char const * const filename) :
 //			GenericReadWriter(filename), file(filename) {
 	BAMWriter(FileWriterBam * pWriter, char const * const pFile) :
-			GenericReadWriter(), writer(pWriter), file(pFile), slamSeq(Config.GetInt(SLAM_SEQ)), trimPolyA(Config.GetInt(MAX_POLYA) >= 0) {
+			GenericReadWriter(), writer(pWriter), file(pFile), slamSeq(Config.GetInt(SLAM_SEQ)), trimPolyA(Config.GetInt(MAX_POLYA) >= 0), bufferLength(2000) {
 		NGMInitMutex(&m_OutputMutex);
 		bufferIndex = 0;
+		buffer = new BamTools::BamAlignment * [bufferLength];
 		//Log.Error("BAM output not supported at the moment!");
 		//Fatal();
 		if (Config.Exists(RG_ID)) {
@@ -27,11 +28,16 @@ public:
 			writer->SaveAlignment(buffer, bufferIndex);
 			bufferIndex = 0;
 		}
+		if(buffer != 0) {
+			delete[] buffer;
+			buffer  = 0;
+		}
 	}
 
 protected:
 	virtual void DoWriteProlog();
 	virtual void DoWriteRead(MappedRead const * const read, int const scoreId);
+	virtual void DoWriteRead(MappedRead const * const read, int const * scoreIDs, int const scoreIdLength);
 	virtual void DoWritePair(MappedRead const * const read1, int const scoreId1, MappedRead const * const read2, int const scoreId2);
 	virtual void DoWriteReadGeneric(MappedRead const * const read, int const scoreId, int const pRef, int const pLoc, int const pDist, int const mappingQlty, int flags);
 	virtual void DoWriteUnmappedReadGeneric(MappedRead const * const read, int const refId, int const pRef, int const loc, int const pLoc, int const pDist, int const mappingQlty, int flags);
@@ -48,7 +54,9 @@ private:
 
 	NGMMutex m_OutputMutex;
 
-	BamTools::BamAlignment * buffer[10000];
+	int const bufferLength;
+
+	BamTools::BamAlignment * * buffer;
 
 	int bufferIndex;
 

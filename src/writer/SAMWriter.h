@@ -25,6 +25,7 @@ public:
 protected:
 	virtual void DoWriteProlog();
 	virtual void DoWriteRead(MappedRead const * const read, int const scoreID);
+	virtual void DoWriteRead(MappedRead const * const read, int const * scoreIDs, int const scoreIdLength);
 	virtual void DoWritePair(MappedRead const * const read1, int const scoreId1, MappedRead const * const read2, int const scoreId2);
 	virtual void DoWriteReadGeneric(MappedRead const * const read, int const scoreID, char const * pRefName, int const pLoc, int const pDist, int const mappingQlty, int flags =
 			0);

@@ -88,6 +88,13 @@ void SAMWriter::DoWriteRead(MappedRead const * const read, int const scoreID) {
 	m_Writer->Flush(bufferPosition, BUFFER_LIMIT, writeBuffer);
 }
 
+void SAMWriter::DoWriteRead(MappedRead const * const read, int const * scoreIDs, int const scoreIdLength) {
+	for(int i = 0; i < scoreIdLength; ++i) {
+		DoWriteReadGeneric(read, scoreIDs[i], "*", -1, 0, read->mappingQlty);
+	}
+	m_Writer->Flush(bufferPosition, BUFFER_LIMIT, writeBuffer);
+}
+
 void SAMWriter::DoWriteReadGeneric(MappedRead const * const read,
 		int const scoreID, char const * pRefName, int const pLoc,
 		int const pDist, int const mappingQlty, int flags) {
