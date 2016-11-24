@@ -221,6 +221,10 @@ CompactPrefixTable::CompactPrefixTable(bool const dualStrand, bool const skip) :
 		saveToFile(cacheFile, indexLength);
 	}
 
+	if(cacheFile != 0) {
+		delete[] cacheFile;
+		cacheFile = 0;
+	}
 //	test();
 
 	stats();

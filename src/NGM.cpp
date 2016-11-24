@@ -112,6 +112,11 @@ void _NGM::InitProviders() {
 
 _NGM::~_NGM() {
 
+	if (Stats != 0) {
+		delete Stats;
+		Stats = 0;
+	}
+
 	if (m_RefProvider != 0)
 		delete m_RefProvider;
 

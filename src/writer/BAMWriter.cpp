@@ -161,6 +161,12 @@ void BAMWriter::DoWriteReadGeneric(MappedRead const * const read, int const scor
 	translate_flag(al, flags);
 	al->SetIsMapped(true);
 
+//	if (scoreId != 0) {
+//		flags |= 0x100;
+//
+//	}
+	al->SetIsPrimaryAlignment(scoreId == 0);
+
 	if (read->Scores[scoreId].Location.isReverse()) {
 		readseq = read->RevSeq;
 		if (qltystr != 0 && qltystr[0] != '*') {

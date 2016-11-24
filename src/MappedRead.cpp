@@ -26,7 +26,7 @@ MappedRead::MappedRead(int const readid, int const qrymaxlen) :
 	memset(Seq, '\0', qryMaxLen);
 
 	qlty = new char[qryMaxLen];
-	memset(Seq, '\0', qryMaxLen);
+	memset(qlty, '\0', qryMaxLen);
 }
 
 static inline char cpl(char c) {
@@ -95,7 +95,7 @@ MappedRead::~MappedRead() {
 				delete[] Alignments[i].pBuffer2;
 			Alignments[i].pBuffer2 = 0;
 			if(Alignments[i].ExtendedData != 0)
-				delete[] (int *)Alignments[i].ExtendedData;
+				delete[] ((AlignmentPosition *)Alignments[i].ExtendedData);
 			Alignments[i].ExtendedData = 0;
 		}
 		delete[] Alignments;

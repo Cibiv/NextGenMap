@@ -15,29 +15,29 @@ void AlignmentBuffer::flush() {
 }
 
 void AlignmentBuffer::debugAlgnFinished(MappedRead * read) {
-	Log.Debug(32, "READ_%d\tALGN\tAll alignments computed (%d)", read->ReadId, read->numScores());
+//	Log.Debug(32, "READ_%d\tALGN\tAll alignments computed (%d)", read->ReadId, read->numScores());
+//
+//	if(read->numScores() > 0) {
+//		for(int i = 0; i < read->numScores(); ++i) {
+//
+//			LocationScore score = read->Scores[i];
+//			Align align = read->Alignments[i];
+//
+//			SequenceLocation loc = score.Location;
+//			SequenceProvider.convert(loc);
+//
+//			int refNameLength = 0;
+//			//TODO_GENOMESIZE: Re-enable me
+//			//Log.Debug(128, "READ_%d\tALGN_RESULTS\tCMR_%d\t%f\t%f\t%d\t%s\t%s\t%d\t%s", read->ReadId, i, score.Score.f, align.Identity, align.NM, align.pBuffer1, align.pBuffer2, loc.m_Location, SequenceProvider.GetRefName(loc.getrefId(), refNameLength));
+//		}
 
-	if(read->numScores() > 0) {
-		for(int i = 0; i < read->numScores(); ++i) {
+//	}
 
-			LocationScore score = read->Scores[i];
-			Align align = read->Alignments[i];
-
-			SequenceLocation loc = score.Location;
-			SequenceProvider.convert(loc);
-
-			int refNameLength = 0;
-			//TODO_GENOMESIZE: Re-enable me
-			//Log.Debug(128, "READ_%d\tALGN_RESULTS\tCMR_%d\t%f\t%f\t%d\t%s\t%s\t%d\t%s", read->ReadId, i, score.Score.f, align.Identity, align.NM, align.pBuffer1, align.pBuffer2, loc.m_Location, SequenceProvider.GetRefName(loc.getrefId(), refNameLength));
-		}
-
-	}
-
-#ifdef _DEBUGCMRS
-	SequenceLocation rloc = SequenceProvider.convert(cur_read, cur_read->Scores[scoreId].Location.m_Location);
-	int refNameLength = 0;
-	fprintf(cmrBed, "%s\t%d\t%d\t%s_%d\t%f\t%c\n", SequenceProvider.GetRefName(rloc.getrefId(), refNameLength), rloc.m_Location - (corridor >> 1), rloc.m_Location - (corridor >> 1) + refMaxLen, cur_read->name, scoreId, cur_read->Scores[scoreId].Score.f, (rloc.isReverse()) ? '-' : '+');
-#endif
+//#ifdef _DEBUGCMRS
+//	SequenceLocation rloc = SequenceProvider.convert(cur_read, cur_read->Scores[scoreId].Location.m_Location);
+//	int refNameLength = 0;
+//	fprintf(cmrBed, "%s\t%d\t%d\t%s_%d\t%f\t%c\n", SequenceProvider.GetRefName(rloc.getrefId(), refNameLength), rloc.m_Location - (corridor >> 1), rloc.m_Location - (corridor >> 1) + refMaxLen, cur_read->name, scoreId, cur_read->Scores[scoreId].Score.f, (rloc.isReverse()) ? '-' : '+');
+//#endif
 }
 
 void AlignmentBuffer::addRead(MappedRead * read, int scoreID) {
