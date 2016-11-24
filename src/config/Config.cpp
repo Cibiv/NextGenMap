@@ -524,12 +524,6 @@ _Config::_Config(int argc, char * argv[], bool praseArgs) {
 		Default("sensitive", 0);
 		Default("very_sensitive", 0);
 
-		//TODO: remove
-		Default("qry_max_len", 100);
-		Default("skip_estimate", 1);
-		Default("qry_avg_len", 100);
-		Default("corridor", 20);
-
 #ifdef __APPLE__
 		Default("gpu", 0);
 #endif
