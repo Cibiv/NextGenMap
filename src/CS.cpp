@@ -460,7 +460,7 @@ void CS::DoRun() {
 	ScoreBuffer * scoreBuffer = new ScoreBuffer(oclAligner, alignmentBuffer);
 	NGM.ReleaseOutputLock();
 
-	int x_SrchTableLen = (int) pow(2, x_SrchTableBitLen);
+	int x_SrchTableLen = (int) pow(2.0f, x_SrchTableBitLen * 1.0f);
 
 	rTable = new CSTableEntry[x_SrchTableLen];
 	Log.Debug(LOG_CS_DETAILS, "Sizeof CSTableEntry %d (%d)", sizeof(CSTableEntry), sizeof(SequenceLocation));

@@ -105,7 +105,7 @@ protected:
 	{
 		c_SrchTableBitLen = bitLen;
 		c_BitShift = 64 - c_SrchTableBitLen;
-		c_SrchTableLen = (int) pow(2, c_SrchTableBitLen);
+		c_SrchTableLen = (int) pow(2.0f, c_SrchTableBitLen * 1.0f);
 	}
 
 private:
