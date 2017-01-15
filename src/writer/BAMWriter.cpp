@@ -230,7 +230,7 @@ void BAMWriter::DoWriteReadGeneric(MappedRead const * const read, int const scor
 //	//Optional fields
 	al->AddTag("AS", "i", (int) read->Scores[scoreId].Score.f);
 	al->AddTag("NM", "i", read->Alignments[scoreId].NM);
-	al->AddTag("NH", "i", read->Calculated);
+	al->AddTag("NH", "i", (int) read->numTopScores);
 
 	if (Config.GetInt("bs_mapping") == 1) {
 		if (!(read->ReadId & 1) || read->Paired == 0) {
