@@ -40,55 +40,73 @@ uloc CompactPrefixTable::kmerCountMinLocation;
 uloc CompactPrefixTable::kmerCountMaxLocation;
 int* CompactPrefixTable::kmerFreqsOverall;
 
-static const unsigned char ReverseTable16[] = { 0x00, 0x04, 0x08, 0x0C, 0x01,
-		0x05, 0x09, 0x0D, 0x02, 0x06, 0x0A, 0x0E, 0x03, 0x07, 0x0B, 0x0F };
-
-//static const unsigned char ReverseTable256[] = { 0, 64, 128, 192, 16, 80, 144,
-//		208, 32, 96, 160, 224, 48, 112, 176, 240, 4, 68, 132, 196, 20, 84, 148,
-//		212, 36, 100, 164, 228, 52, 116, 180, 244, 8, 72, 136, 200, 24, 88, 152,
-//		216, 40, 104, 168, 232, 56, 120, 184, 248, 12, 76, 140, 204, 28, 92,
-//		156, 220, 44, 108, 172, 236, 60, 124, 188, 252, 1, 65, 129, 193, 17, 81,
-//		145, 209, 33, 97, 161, 225, 49, 113, 177, 241, 5, 69, 133, 197, 21, 85,
-//		149, 213, 37, 101, 165, 229, 53, 117, 181, 245, 9, 73, 137, 201, 25, 89,
-//		153, 217, 41, 105, 169, 233, 57, 121, 185, 249, 13, 77, 141, 205, 29,
-//		93, 157, 221, 45, 109, 173, 237, 61, 125, 189, 253, 2, 66, 130, 194, 18,
-//		82, 146, 210, 34, 98, 162, 226, 50, 114, 178, 242, 6, 70, 134, 198, 22,
-//		86, 150, 214, 38, 102, 166, 230, 54, 118, 182, 246, 10, 74, 138, 202,
-//		26, 90, 154, 218, 42, 106, 170, 234, 58, 122, 186, 250, 14, 78, 142,
-//		206, 30, 94, 158, 222, 46, 110, 174, 238, 62, 126, 190, 254, 3, 67, 131,
-//		195, 19, 83, 147, 211, 35, 99, 163, 227, 51, 115, 179, 243, 7, 71, 135,
-//		199, 23, 87, 151, 215, 39, 103, 167, 231, 55, 119, 183, 247, 11, 75,
-//		139, 203, 27, 91, 155, 219, 43, 107, 171, 235, 59, 123, 187, 251, 15,
-//		79, 143, 207, 31, 95, 159, 223, 47, 111, 175, 239, 63, 127, 191, 255 };
-
-///////////////////////////////////////////////////////////////////////////////
-// HELPERS
-///////////////////////////////////////////////////////////////////////////////
+//static const unsigned char ReverseTable16[] = { 0x00, 0x04, 0x08, 0x0C, 0x01,
+//		0x05, 0x09, 0x0D, 0x02, 0x06, 0x0A, 0x0E, 0x03, 0x07, 0x0B, 0x0F };
+//
+////static const unsigned char ReverseTable256[] = { 0, 64, 128, 192, 16, 80, 144,
+////		208, 32, 96, 160, 224, 48, 112, 176, 240, 4, 68, 132, 196, 20, 84, 148,
+////		212, 36, 100, 164, 228, 52, 116, 180, 244, 8, 72, 136, 200, 24, 88, 152,
+////		216, 40, 104, 168, 232, 56, 120, 184, 248, 12, 76, 140, 204, 28, 92,
+////		156, 220, 44, 108, 172, 236, 60, 124, 188, 252, 1, 65, 129, 193, 17, 81,
+////		145, 209, 33, 97, 161, 225, 49, 113, 177, 241, 5, 69, 133, 197, 21, 85,
+////		149, 213, 37, 101, 165, 229, 53, 117, 181, 245, 9, 73, 137, 201, 25, 89,
+////		153, 217, 41, 105, 169, 233, 57, 121, 185, 249, 13, 77, 141, 205, 29,
+////		93, 157, 221, 45, 109, 173, 237, 61, 125, 189, 253, 2, 66, 130, 194, 18,
+////		82, 146, 210, 34, 98, 162, 226, 50, 114, 178, 242, 6, 70, 134, 198, 22,
+////		86, 150, 214, 38, 102, 166, 230, 54, 118, 182, 246, 10, 74, 138, 202,
+////		26, 90, 154, 218, 42, 106, 170, 234, 58, 122, 186, 250, 14, 78, 142,
+////		206, 30, 94, 158, 222, 46, 110, 174, 238, 62, 126, 190, 254, 3, 67, 131,
+////		195, 19, 83, 147, 211, 35, 99, 163, 227, 51, 115, 179, 243, 7, 71, 135,
+////		199, 23, 87, 151, 215, 39, 103, 167, 231, 55, 119, 183, 247, 11, 75,
+////		139, 203, 27, 91, 155, 219, 43, 107, 171, 235, 59, 123, 187, 251, 15,
+////		79, 143, 207, 31, 95, 159, 223, 47, 111, 175, 239, 63, 127, 191, 255 };
+//
+/////////////////////////////////////////////////////////////////////////////////
+//// HELPERS
+/////////////////////////////////////////////////////////////////////////////////
+//
+////Works only for 4 byte
+//inline ulong revComp(ulong prefix) {
+//	static const int shift = 32 - CS::prefixBits;
+//
+//	//Compute complement
+//	ulong compPrefix = (prefix ^ 0xAAAAAAAA) & CS::prefixMask;
+//	//Reverse
+//	compPrefix = compPrefix << shift;
+//	ulong compRevPrefix = (ReverseTable16[compPrefix & 0x0f] << 28)
+//			| (ReverseTable16[(compPrefix >> 4) & 0x0f] << 24)
+//			| (ReverseTable16[(compPrefix >> 8) & 0x0f] << 20)
+//			| (ReverseTable16[(compPrefix >> 12) & 0x0f] << 16)
+//			| (ReverseTable16[(compPrefix >> 16) & 0x0f] << 12)
+//			| (ReverseTable16[(compPrefix >> 20) & 0x0f] << 8)
+//			| (ReverseTable16[(compPrefix >> 24) & 0x0f] << 4)
+//			| (ReverseTable16[(compPrefix >> 28) & 0x0f]);
+//
+////	ulong compRevPrefix = (ReverseTable256[compPrefix & 0xff] << 24)
+////			| (ReverseTable256[(compPrefix >> 8) & 0xff] << 16)
+////			| (ReverseTable256[(compPrefix >> 16) & 0xff] << 8)
+////			| (ReverseTable256[(compPrefix >> 24) & 0xff]);
+//
+//	return compRevPrefix;
+//}
 
 //Works only for 4 byte
 inline ulong revComp(ulong prefix) {
-	static const int shift = 32 - CS::prefixBits;
+        static const int shift = 32 - CS::prefixBits;
 
-	//Compute complement
-	ulong compPrefix = (prefix ^ 0xAAAAAAAA) & CS::prefixMask;
-	//Reverse
-	compPrefix = compPrefix << shift;
-	ulong compRevPrefix = (ReverseTable16[compPrefix & 0x0f] << 28)
-			| (ReverseTable16[(compPrefix >> 4) & 0x0f] << 24)
-			| (ReverseTable16[(compPrefix >> 8) & 0x0f] << 20)
-			| (ReverseTable16[(compPrefix >> 12) & 0x0f] << 16)
-			| (ReverseTable16[(compPrefix >> 16) & 0x0f] << 12)
-			| (ReverseTable16[(compPrefix >> 20) & 0x0f] << 8)
-			| (ReverseTable16[(compPrefix >> 24) & 0x0f] << 4)
-			| (ReverseTable16[(compPrefix >> 28) & 0x0f]);
+        // Compute complement and keep only bits required for current k-mer length (reversing will bring them back to the "front")
+        ulong compPrefix = (prefix ^ 0xAAAAAAAA) << shift;
+        compPrefix = (compPrefix & 0xFFFF0000) >> 16 | (compPrefix & 0x0000FFFF) << 16;
+        // Switch 8 bit blocks
+        compPrefix = (compPrefix & 0xFF00FF00) >> 8 | (compPrefix & 0x00FF00FF) << 8;
+        // Switch 4 bit blocks
+        compPrefix = (compPrefix & 0xF0F0F0F0) >> 4 | (compPrefix & 0x0F0F0F0F) << 4;
+        // Switch 2 bit block
+        compPrefix = (compPrefix & 0xCCCCCCCC) >> 2 | (compPrefix & 0x33333333) << 2;
 
-//	ulong compRevPrefix = (ReverseTable256[compPrefix & 0xff] << 24)
-//			| (ReverseTable256[(compPrefix >> 8) & 0xff] << 16)
-//			| (ReverseTable256[(compPrefix >> 16) & 0xff] << 8)
-//			| (ReverseTable256[(compPrefix >> 24) & 0xff]);
-
-	return compRevPrefix;
+        return compPrefix;
 }
+
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
