@@ -46,10 +46,11 @@ int maxHitTableIndex;
 int m_CurrentReadLength;
 
 ReadProvider::ReadProvider() :
-		parser1(0), parser2(0), peDelimiter(
+		parser1(0), parser2(0), _spare_read(0), peDelimiter(
 		Config.GetString("pe_delimiter")[0]), isPaired(
 		Config.GetInt("paired") > 0), skipMateCheck(
-		Config.GetInt(SKIP_MATE_CHECK) == 1) {
+		Config.GetInt(SKIP_MATE_CHECK) == 1),
+        acceptBrokenPaired(true) {
 
 }
 
@@ -523,7 +524,14 @@ bool ReadProvider::GenerateRead(int const readid1, MappedRead * & read1,
 	if (isPaired) {
 		static bool const isInterleaved = Config.Exists("qry");
 		if (isInterleaved) {
-			read1 = GenerateSingleRead(readid1);
+            if (_spare_read) {
+                read1 = _spare_read;
+                _spare_read = 0;
+                read1->ReadId = readid1;
+            } else {
+                read1 = GenerateSingleRead(readid1);
+            }
+
 			read2 = GenerateSingleRead(readid2);
 		} else {
 			read1 = NextRead(parser1, readid1);
@@ -531,14 +539,22 @@ bool ReadProvider::GenerateRead(int const readid1, MappedRead * & read1,
 		}
 
 		if (read1 != 0 && read2 != 0) {
-			if (!skipMateCheck && strcmp(read1->name, read2->name) != 0) {
-				Log.Error("Error while reading paired end reads.");
-				Log.Error("Names of mates don't match: %s and %s.", read1->name, read2->name);
-				Log.Error("NextGenMap expects paired end read names with the format: <read name>/<mate nunber> (e.g. @HWI-ST1176_0172:8:1101:1234:1934/1)");
-				Log.Error("Use -d/--pe-delimiter to specify a different delimiter than '/'");
-				Log.Error("If the format of the read names is correct this error might be caused by missing mates in the input file. Please check your input files or use ngm-utils interleave to match mate pairs.");
-				Log.Error("If you are sure that your input files are valid use --skip-mate-check");
-				Fatal();
+			if (strcmp(read1->name, read2->name) != 0) {
+                if (acceptBrokenPaired) {
+                    _spare_read = read2;
+                    read2 = 0;
+                    _spare_read->Paired = 0;
+                    read1->Paired = 0;
+                    return true;
+                } else if (!skipMateCheck) {
+                    Log.Error("Error while reading paired end reads.");
+                    Log.Error("Names of mates don't match: %s and %s.", read1->name, read2->name);
+                    Log.Error("NextGenMap expects paired end read names with the format: <read name>/<mate nunber> (e.g. @HWI-ST1176_0172:8:1101:1234:1934/1)");
+                    Log.Error("Use -d/--pe-delimiter to specify a different delimiter than '/'");
+                    Log.Error("If the format of the read names is correct this error might be caused by missing mates in the input file. Please check your input files or use ngm-utils interleave to match mate pairs.");
+                    Log.Error("If you are sure that your input files are valid use --skip-mate-check");
+                    Fatal();
+                }
 			}
 			read1->Paired = read2;
 			read2->Paired = read1;
@@ -546,6 +562,11 @@ bool ReadProvider::GenerateRead(int const readid1, MappedRead * & read1,
 		} else if (read1 == 0 && read2 == 0) {
 			return false;
 		} else {
+            if (acceptBrokenPaired) {
+                // Left over read!
+                read1->Paired = 0;
+                return true;
+            }
 			Log.Error("Error in input file. Number of reads in input not even. Please check the input or mapped in single-end mode.");
 			Fatal();
 			return false;
@@ -559,7 +580,7 @@ bool ReadProvider::GenerateRead(int const readid1, MappedRead * & read1,
 
 void ReadProvider::DisposeRead(MappedRead * read) {
 	static bool const isPaired = Config.GetInt("paired") > 0;
-	if (isPaired) // Program runs in paired mode and pair exists
+	if (read->Paired) // Program runs in paired mode and pair exists
 	{
 		if (read->Paired->HasFlag(NGMNames::DeletionPending)) // Paired read was marked for deletion
 				{
