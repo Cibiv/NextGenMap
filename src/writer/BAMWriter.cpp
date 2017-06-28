@@ -405,8 +405,8 @@ void BAMWriter::DoWritePair(MappedRead const * const read1, int const scoreId1, 
 	}
 	if (!read1->hasCandidates() && !read2->hasCandidates()) {
 		//Both mates unmapped
-		DoWriteUnmappedRead(read2, flags2 | 0x8);
-		DoWriteUnmappedRead(read1, flags1 | 0x8);
+		DoWriteUnmappedReadGeneric(read2, -1, -1, -1, -1, 0, 0, flags2 | 0x8);
+		DoWriteUnmappedReadGeneric(read1, -1, -1, -1, -1, 0, 0, flags1 | 0x8);
 	} else if (!read1->hasCandidates()) {
 		//First mate unmapped
 		DoWriteReadGeneric(read2, scoreId2, read2->Scores[scoreId2].Location.getrefId(), read2->Scores[scoreId2].Location.m_Location, 0,
@@ -451,6 +451,10 @@ void BAMWriter::DoWritePair(MappedRead const * const read1, int const scoreId1, 
 			DoWriteReadGeneric(read1, scoreId1, read2->Scores[scoreId2].Location.getrefId(), read2->Scores[scoreId2].Location.m_Location, 0,
 					read1->mappingQlty, flags1);
 		}
+	}
+	if (bufferIndex >= (bufferLength - 1000)) {
+		writer->SaveAlignment(buffer, bufferIndex);
+		bufferIndex = 0;
 	}
 }
 void BAMWriter::DoWriteEpilog() {

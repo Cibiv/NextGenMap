@@ -293,7 +293,7 @@ NGMTHREADFUNC _NGM::ThreadFunc(void* data) {
 
 		Log.Verbose("Thread %i finished", tid);
 	} catch (...) {
-		Log.Error("Unhandled exception in thread %i", tid);
+		Log.Error("\nUnhandled exception in thread %i\n", tid);
 	}
 
 	Log.Verbose("ThreadFunc on thread %i returning", tid);
