@@ -523,6 +523,7 @@ _Config::_Config(int argc, char * argv[], bool praseArgs) {
 		Default("fast", 0);
 		Default("sensitive", 0);
 		Default("very_sensitive", 0);
+		Default(BROKEN_PAIRS, 0);
 
 #ifdef __APPLE__
 		Default("gpu", 0);

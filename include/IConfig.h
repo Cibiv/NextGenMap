@@ -50,6 +50,8 @@ static char const * const TRIM5 = "trim5";
 
 static char const * const MAX_POLYA = "max_polya";
 
+static char const * const BROKEN_PAIRS = "broken_pairs";
+
 #ifdef DEBUGLOG
 static char const * const LOG = "log";
 static char const * const LOG_LVL = "log_lvl";

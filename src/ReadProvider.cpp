@@ -50,7 +50,7 @@ ReadProvider::ReadProvider() :
 		Config.GetString("pe_delimiter")[0]), isPaired(
 		Config.GetInt("paired") > 0), skipMateCheck(
 		Config.GetInt(SKIP_MATE_CHECK) == 1),
-        acceptBrokenPaired(true) {
+        acceptBrokenPaired(Config.GetInt(BROKEN_PAIRS) == 1) {
 
 }
 
@@ -171,6 +171,11 @@ uint ReadProvider::init() {
 		Log.Message("Input is paired end data.");
 	} else {
 		Log.Message("Input is single end data.");
+	}
+
+	if(Config.GetInt(BROKEN_PAIRS) == 1 && (Config.Exists("qry1") || Config.Exists("qry2"))) {
+		Log.Error("--broken-pairs only works with interleaved paired-end files.");
+		Fatal();
 	}
 
 	char const * const fileName1 =

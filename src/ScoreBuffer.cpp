@@ -193,7 +193,7 @@ void ScoreBuffer::DoRun() {
 					}
 				}
 			} else {
-				if (++cur_read->Calculated == cur_read->numScores() && cur_read->Paired->Calculated == cur_read->Paired->numScores()) {
+				if (++cur_read->Calculated == cur_read->numScores() && (cur_read->Paired == 0 || cur_read->Paired->Calculated == cur_read->Paired->numScores())) {
 #ifdef DEBUGLOG
 					debugScoresFinished(cur_read);
 					debugScoresFinished(cur_read->Paired);
@@ -201,7 +201,7 @@ void ScoreBuffer::DoRun() {
 					//all scores computed for both mates
 					if (topN == 1) {
 						if (!fastPairing) {
-							if (cur_read->Paired->hasCandidates()) {
+							if (cur_read->Paired != 0 && cur_read->Paired->hasCandidates()) {
 								top1PE(cur_read);
 							}
 							else {
@@ -209,7 +209,7 @@ void ScoreBuffer::DoRun() {
 							}
 						} else {
 							top1SE(cur_read);
-							if (cur_read->Paired->hasCandidates()) {
+							if (cur_read->Paired != 0 && cur_read->Paired->hasCandidates()) {
 								top1SE(cur_read->Paired);
 							}
 						}

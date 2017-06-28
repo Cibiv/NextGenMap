@@ -98,6 +98,7 @@ static const struct option long_options[] =
 		{ "fast",                       no_argument,       0, 0 },
 		{ "sensitive",                  no_argument,       0, 0 },
 		{ "very-sensitive",             no_argument,       0, 0 },
+		{ "broken-pairs",             no_argument,       0, 0 },
 		{ "max-kfreq",                  required_argument,       0, 0 },
 		{ TRIM5,                        required_argument,       0, '5' },
 		{ "max-polya",                  required_argument,       0, 0 },
