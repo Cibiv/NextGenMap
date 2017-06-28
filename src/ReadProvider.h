@@ -28,12 +28,15 @@ private:
 
 	IParser * parser1;
 	IParser * parser2;
+	MappedRead * _spare_read;
 
 	char const peDelimiter;
 
 	bool const isPaired;
 
 	bool const skipMateCheck;
+
+    bool const acceptBrokenPaired;
 
 	virtual MappedRead * NextRead(IParser * parser, int const id);
 	MappedRead * GenerateSingleRead(int const readid);

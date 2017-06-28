@@ -20,7 +20,7 @@ struct MappedRead {
 private:
 
 public:
-	int const ReadId;
+	int ReadId;
 
 	//Calculated is initialized with -1. This shows that the read has not passed the candidate search
 	//When the read is submitted to the score computation calculated is set to 0. Each time a score
