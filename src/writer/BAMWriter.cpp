@@ -154,8 +154,13 @@ void BAMWriter::DoWriteReadGeneric(MappedRead const * const read, int const scor
 	int readlen = read->length;
 	char * readname = read->name;
 
-	char * qltystr = read->qlty;
 	int qltylen = readlen;
+	char * qltystr = new char[qltylen + 1];
+	if(qltystr != 0) {
+		memcpy(qltystr, read->qlty, sizeof(char) * qltylen);
+	} else {
+		qltystr[0] = '\0';
+	}
 
 	al->AlignmentFlag = 0;
 	translate_flag(al, flags);
@@ -288,6 +293,12 @@ void BAMWriter::DoWriteReadGeneric(MappedRead const * const read, int const scor
 
 
 	buffer[bufferIndex++] = al;
+
+	if(qltystr) {
+		delete[] qltystr;
+		qltystr = 0;
+	}
+
 
 //NGMUnlock(&m_OutputMutex);
 }

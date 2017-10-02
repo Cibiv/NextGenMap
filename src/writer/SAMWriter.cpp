@@ -105,7 +105,13 @@ void SAMWriter::DoWriteReadGeneric(MappedRead const * const read,
 
 	char const * readseq = read->Seq;
 	char * readname = read->name;
-	char * qltystr = read->qlty;
+	char * qltystr = new char[read->length + 1];
+	if(qltystr != 0) {
+		memcpy(qltystr, read->qlty, sizeof(char) * read->length);
+	} else {
+		qltystr[0] = '\0';
+	}
+
 
 	if (scoreID != 0) {
 		flags |= 0x100;
@@ -215,7 +221,10 @@ void SAMWriter::DoWriteReadGeneric(MappedRead const * const read,
 	}
 
 	Print("\n");
-
+	if(qltystr) {
+		delete[] qltystr;
+		qltystr = 0;
+	}
 }
 
 void SAMWriter::DoWritePair(MappedRead const * const read1, int const scoreId1,
