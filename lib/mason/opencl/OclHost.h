@@ -14,6 +14,7 @@
 #include <CL/opencl.h>
 #//endif
 
+#include <cstdlib>
 #include <string>
 
 #include "ILog.h"
