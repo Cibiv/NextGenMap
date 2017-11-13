@@ -59,7 +59,7 @@ IParser * DetermineParserStr(string strfileName) {
 		Fatal();
 	}
 	char * buffer = new char[1000];
-	while (gzgets(fp, buffer, 1000) > 0 && buffer[0] == '@') {
+	while (gzgets(fp, buffer, 1000) && buffer[0] == '@') {
 	}
 	gzclose(fp);
 
