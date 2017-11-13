@@ -477,7 +477,7 @@ IParser * ReadProvider::DetermineParser(char const * fileName,
 	}
 	IParser * parser = 0;
 	char * buffer = new char[1000];
-	while (gzgets(fp, buffer, 1000) > 0 && buffer[0] == '@') {
+	while (gzgets(fp, buffer, 1000) && buffer[0] == '@') {
 	}
 
 	int count = 0;
