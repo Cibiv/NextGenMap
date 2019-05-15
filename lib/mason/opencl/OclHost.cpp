@@ -10,6 +10,7 @@
 #include <string.h>
 #include <pthread.h>
 #include "IConfig.h"
+#include <thread>
 
 pthread_mutex_t mutext_next_sub_block;
 
@@ -108,11 +109,16 @@ OclHost::OclHost(int const device_type, int gpu_id, int const cpu_cores) :
 			cl_device_partition_property props[3];
 
 			props[0] = CL_DEVICE_PARTITION_EQUALLY; // Equally
-			props[1] = 1; // 4 compute units per sub-device
+			props[1] = 1; // compute units per sub-device
 			props[2] = 0;
 
-			devices = (cl_device_id *) malloc(256 * sizeof(cl_device_id));
-			ciErrNum = clCreateSubDevices(device_id, props, 256, devices,
+			unsigned int threads = std::thread::hardware_concurrency();
+			if ( threads == 0 ) {
+				threads = 2560;
+				Log.Message("Number of concurrent threads not well defined or not computable. Using default of %d.", threads);
+			}
+			devices = (cl_device_id *) malloc(threads * sizeof(cl_device_id));
+			ciErrNum = clCreateSubDevices(device_id, props, threads, devices,
 					&ciDeviceCount);
 			if (ciErrNum == -18) {
 				ciDeviceCount = 1;
